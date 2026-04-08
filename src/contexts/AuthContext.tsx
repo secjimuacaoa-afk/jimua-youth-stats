@@ -52,10 +52,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const { data: estruturaData } = await supabase
       .from("user_estruturas")
-      .select("estrutura_id")
+      .select("igreja_id")
       .eq("user_id", userId);
 
-    setUserEstruturas(estruturaData?.map((e: any) => e.estrutura_id) ?? []);
+    setUserEstruturas(estruturaData?.map((e: any) => e.igreja_id).filter(Boolean) ?? []);
   };
 
   useEffect(() => {

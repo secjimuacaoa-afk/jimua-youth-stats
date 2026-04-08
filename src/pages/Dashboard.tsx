@@ -18,10 +18,10 @@ const Dashboard = () => {
     },
   });
 
-  const { data: estruturas = [] } = useQuery({
-    queryKey: ["dashboard-estruturas"],
+  const { data: igrejas = [] } = useQuery({
+    queryKey: ["dashboard-igrejas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("estruturas").select("id");
+      const { data, error } = await supabase.from("igrejas").select("id");
       if (error) throw error;
       return data;
     },
@@ -37,7 +37,7 @@ const Dashboard = () => {
   });
 
   const totalJovens = jovens.length;
-  const totalEstruturas = estruturas.length;
+  const totalIgrejas = igrejas.length;
   const pendentes = relatorios.filter((r: any) => r.status === "submetido").length;
   const activos = jovens.filter((j: any) => j.activo).length;
   const masculino = jovens.filter((j: any) => j.sexo === "masculino").length;
@@ -59,7 +59,7 @@ const Dashboard = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard title="Total de Jovens" value={totalJovens} icon={Users} change={`${activos} activos`} changeType="positive" />
-          <StatCard title="Cargos Pastorais" value={totalEstruturas} icon={Church} change="estruturas" changeType="neutral" />
+          <StatCard title="Igrejas" value={totalIgrejas} icon={Church} change="cargos pastorais" changeType="neutral" />
           <StatCard title="Masculino / Feminino" value={`${masculino} / ${feminino}`} icon={TrendingUp} change="distribuição" changeType="neutral" />
           <StatCard title="Relatórios Pendentes" value={pendentes} icon={FileCheck} change="a analisar" changeType={pendentes > 0 ? "negative" : "positive"} />
         </div>
@@ -121,7 +121,7 @@ const Dashboard = () => {
             <CardContent className="space-y-3">
               <div className="text-sm text-card-foreground">
                 <p>Jovens registados: <strong>{totalJovens}</strong></p>
-                <p>Estruturas: <strong>{totalEstruturas}</strong></p>
+                <p>Igrejas: <strong>{totalIgrejas}</strong></p>
                 <p>Relatórios: <strong>{relatorios.length}</strong></p>
                 <p className="mt-2 text-xs text-muted-foreground">
                   {isAdmin ? "Acesso administrativo completo" : "Acesso limitado à sua estrutura"}

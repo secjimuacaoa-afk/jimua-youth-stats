@@ -14,27 +14,79 @@ export type Database = {
   }
   public: {
     Tables: {
-      estruturas: {
+      circuitos: {
         Row: {
-          cargo_pastoral: string
-          circuito: string
           created_at: string
           id: string
-          intendencia: string
+          intendencia_id: string
+          nome: string
         }
         Insert: {
-          cargo_pastoral: string
-          circuito: string
           created_at?: string
           id?: string
-          intendencia: string
+          intendencia_id: string
+          nome: string
         }
         Update: {
-          cargo_pastoral?: string
-          circuito?: string
           created_at?: string
           id?: string
-          intendencia?: string
+          intendencia_id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circuitos_intendencia_id_fkey"
+            columns: ["intendencia_id"]
+            isOneToOne: false
+            referencedRelation: "intendencias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      igrejas: {
+        Row: {
+          circuito_id: string
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          circuito_id: string
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          circuito_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "igrejas_circuito_id_fkey"
+            columns: ["circuito_id"]
+            isOneToOne: false
+            referencedRelation: "circuitos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intendencias: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
         }
         Relationships: []
       }
@@ -47,8 +99,8 @@ export type Database = {
           data_nascimento: string
           escolaridade: string | null
           estado_civil: string | null
-          estrutura_id: string
           id: string
+          igreja_id: string | null
           motivo_inactividade: string | null
           nome: string
           ocupacao: string | null
@@ -64,8 +116,8 @@ export type Database = {
           data_nascimento: string
           escolaridade?: string | null
           estado_civil?: string | null
-          estrutura_id: string
           id?: string
+          igreja_id?: string | null
           motivo_inactividade?: string | null
           nome: string
           ocupacao?: string | null
@@ -81,8 +133,8 @@ export type Database = {
           data_nascimento?: string
           escolaridade?: string | null
           estado_civil?: string | null
-          estrutura_id?: string
           id?: string
+          igreja_id?: string | null
           motivo_inactividade?: string | null
           nome?: string
           ocupacao?: string | null
@@ -92,10 +144,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "jovens_estrutura_id_fkey"
-            columns: ["estrutura_id"]
+            foreignKeyName: "jovens_igreja_id_fkey"
+            columns: ["igreja_id"]
             isOneToOne: false
-            referencedRelation: "estruturas"
+            referencedRelation: "igrejas"
             referencedColumns: ["id"]
           },
         ]
@@ -131,8 +183,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           data_submissao: string | null
-          estrutura_id: string
           id: string
+          igreja_id: string | null
           semestre: number
           status: Database["public"]["Enums"]["relatorio_status"]
         }
@@ -142,8 +194,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           data_submissao?: string | null
-          estrutura_id: string
           id?: string
+          igreja_id?: string | null
           semestre: number
           status?: Database["public"]["Enums"]["relatorio_status"]
         }
@@ -153,43 +205,43 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           data_submissao?: string | null
-          estrutura_id?: string
           id?: string
+          igreja_id?: string | null
           semestre?: number
           status?: Database["public"]["Enums"]["relatorio_status"]
         }
         Relationships: [
           {
-            foreignKeyName: "relatorios_estrutura_id_fkey"
-            columns: ["estrutura_id"]
+            foreignKeyName: "relatorios_igreja_id_fkey"
+            columns: ["igreja_id"]
             isOneToOne: false
-            referencedRelation: "estruturas"
+            referencedRelation: "igrejas"
             referencedColumns: ["id"]
           },
         ]
       }
       user_estruturas: {
         Row: {
-          estrutura_id: string
           id: string
+          igreja_id: string | null
           user_id: string
         }
         Insert: {
-          estrutura_id: string
           id?: string
+          igreja_id?: string | null
           user_id: string
         }
         Update: {
-          estrutura_id?: string
           id?: string
+          igreja_id?: string | null
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "user_estruturas_estrutura_id_fkey"
-            columns: ["estrutura_id"]
+            foreignKeyName: "user_estruturas_igreja_id_fkey"
+            columns: ["igreja_id"]
             isOneToOne: false
-            referencedRelation: "estruturas"
+            referencedRelation: "igrejas"
             referencedColumns: ["id"]
           },
         ]

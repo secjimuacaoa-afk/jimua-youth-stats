@@ -6,127 +6,387 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Church } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Pencil, Church, MapPin, Building } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const Estruturas = () => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [intendencia, setIntendencia] = useState("");
-  const [circuito, setCircuito] = useState("");
-  const [cargoPastoral, setCargoPastoral] = useState("");
   const { toast } = useToast();
   const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: estruturas = [], isLoading } = useQuery({
-    queryKey: ["estruturas"],
+  // Dialog states
+  const [intDialogOpen, setIntDialogOpen] = useState(false);
+  const [circDialogOpen, setCircDialogOpen] = useState(false);
+  const [igrDialogOpen, setIgrDialogOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editId, setEditId] = useState("");
+
+  // Form states
+  const [nome, setNome] = useState("");
+  const [selectedIntendencia, setSelectedIntendencia] = useState("");
+  const [selectedCircuito, setSelectedCircuito] = useState("");
+
+  // Queries
+  const { data: intendencias = [], isLoading: loadingInt } = useQuery({
+    queryKey: ["intendencias"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("estruturas").select("*").order("intendencia");
+      const { data, error } = await supabase.from("intendencias").select("*").order("nome");
       if (error) throw error;
       return data;
     },
   });
 
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("estruturas").insert({ intendencia, circuito, cargo_pastoral: cargoPastoral });
+  const { data: circuitos = [], isLoading: loadingCirc } = useQuery({
+    queryKey: ["circuitos"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("circuitos").select("*, intendencias(nome)").order("nome");
       if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({ title: "Estrutura criada" });
-      setDialogOpen(false);
-      setIntendencia(""); setCircuito(""); setCargoPastoral("");
-      queryClient.invalidateQueries({ queryKey: ["estruturas"] });
-    },
-    onError: (err: Error) => {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
+      return data;
     },
   });
+
+  const { data: igrejas = [], isLoading: loadingIgr } = useQuery({
+    queryKey: ["igrejas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("igrejas").select("*, circuitos(nome, intendencias(nome))").order("nome");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const resetForm = () => {
+    setNome("");
+    setSelectedIntendencia("");
+    setSelectedCircuito("");
+    setEditMode(false);
+    setEditId("");
+  };
+
+  // Mutations
+  const intMutation = useMutation({
+    mutationFn: async () => {
+      if (editMode) {
+        const { error } = await supabase.from("intendencias").update({ nome }).eq("id", editId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("intendencias").insert({ nome });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast({ title: editMode ? "Intendência actualizada" : "Intendência criada" });
+      setIntDialogOpen(false);
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ["intendencias"] });
+    },
+    onError: (err: Error) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
+  });
+
+  const circMutation = useMutation({
+    mutationFn: async () => {
+      if (editMode) {
+        const { error } = await supabase.from("circuitos").update({ nome, intendencia_id: selectedIntendencia }).eq("id", editId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("circuitos").insert({ nome, intendencia_id: selectedIntendencia });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast({ title: editMode ? "Circuito actualizado" : "Circuito criado" });
+      setCircDialogOpen(false);
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ["circuitos"] });
+    },
+    onError: (err: Error) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
+  });
+
+  const igrMutation = useMutation({
+    mutationFn: async () => {
+      if (editMode) {
+        const { error } = await supabase.from("igrejas").update({ nome, circuito_id: selectedCircuito }).eq("id", editId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("igrejas").insert({ nome, circuito_id: selectedCircuito });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast({ title: editMode ? "Igreja actualizada" : "Igreja criada" });
+      setIgrDialogOpen(false);
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ["igrejas"] });
+    },
+    onError: (err: Error) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
+  });
+
+  const openEdit = (type: "int" | "circ" | "igr", item: any) => {
+    setEditMode(true);
+    setEditId(item.id);
+    setNome(item.nome);
+    if (type === "circ") {
+      setSelectedIntendencia(item.intendencia_id);
+      setCircDialogOpen(true);
+    } else if (type === "igr") {
+      setSelectedCircuito(item.circuito_id);
+      setIgrDialogOpen(true);
+    } else {
+      setIntDialogOpen(true);
+    }
+  };
+
+  const filteredCircuitos = selectedIntendencia
+    ? circuitos.filter((c: any) => c.intendencia_id === selectedIntendencia)
+    : circuitos;
 
   return (
     <DashboardLayout>
       <div className="p-6 lg:p-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Estruturas Eclesiásticas</h1>
-            <p className="text-sm text-muted-foreground mt-1">Gerencie intendências, circuitos e cargos pastorais</p>
-          </div>
-          {isAdmin && (
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-primary text-primary-foreground hover:bg-navy-dark">
-                  <Plus size={18} className="mr-2" />
-                  Nova Estrutura
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>Criar Nova Estrutura</DialogTitle>
-                </DialogHeader>
-                <form className="space-y-4 mt-2" onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }}>
-                  <div className="space-y-2">
-                    <Label>Intendência *</Label>
-                    <Input placeholder="Ex: Intendência Norte" value={intendencia} onChange={(e) => setIntendencia(e.target.value)} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Circuito *</Label>
-                    <Input placeholder="Ex: Circuito Luanda" value={circuito} onChange={(e) => setCircuito(e.target.value)} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Cargo Pastoral *</Label>
-                    <Input placeholder="Ex: Igreja Bom Pastor" value={cargoPastoral} onChange={(e) => setCargoPastoral(e.target.value)} required />
-                  </div>
-                  <div className="flex justify-end gap-3 pt-2">
-                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-                    <Button type="submit" className="bg-primary text-primary-foreground" disabled={createMutation.isPending}>
-                      {createMutation.isPending ? "Criando..." : "Criar"}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          )}
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Estruturas Eclesiásticas</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Hierarquia: Intendência → Circuito → Igreja (Cargo Pastoral)
+          </p>
         </div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Church size={18} />
-              {estruturas.length} estruturas registadas
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Intendência</TableHead>
-                    <TableHead>Circuito</TableHead>
-                    <TableHead>Cargo Pastoral</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow><TableCell colSpan={3} className="text-center py-8">Carregando...</TableCell></TableRow>
-                  ) : estruturas.length === 0 ? (
-                    <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground">Nenhuma estrutura registada</TableCell></TableRow>
-                  ) : (
-                    estruturas.map((e: any) => (
-                      <TableRow key={e.id}>
-                        <TableCell className="font-medium">{e.intendencia}</TableCell>
-                        <TableCell>{e.circuito}</TableCell>
-                        <TableCell>{e.cargo_pastoral}</TableCell>
+        <Tabs defaultValue="intendencias">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="intendencias" className="flex items-center gap-1">
+              <MapPin size={14} /> Intendências
+            </TabsTrigger>
+            <TabsTrigger value="circuitos" className="flex items-center gap-1">
+              <Building size={14} /> Circuitos
+            </TabsTrigger>
+            <TabsTrigger value="igrejas" className="flex items-center gap-1">
+              <Church size={14} /> Igrejas
+            </TabsTrigger>
+          </TabsList>
+
+          {/* INTENDÊNCIAS */}
+          <TabsContent value="intendencias">
+            <Card>
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-base">{intendencias.length} intendências</CardTitle>
+                {isAdmin && (
+                  <Dialog open={intDialogOpen} onOpenChange={(v) => { setIntDialogOpen(v); if (!v) resetForm(); }}>
+                    <DialogTrigger asChild>
+                      <Button size="sm"><Plus size={16} className="mr-1" /> Nova Intendência</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader><DialogTitle>{editMode ? "Editar" : "Criar"} Intendência</DialogTitle></DialogHeader>
+                      <form className="space-y-4 mt-2" onSubmit={(e) => { e.preventDefault(); intMutation.mutate(); }}>
+                        <div className="space-y-2">
+                          <Label>Nome *</Label>
+                          <Input placeholder="Ex: Intendência Norte" value={nome} onChange={(e) => setNome(e.target.value)} required />
+                        </div>
+                        <div className="flex justify-end gap-3">
+                          <Button type="button" variant="outline" onClick={() => { setIntDialogOpen(false); resetForm(); }}>Cancelar</Button>
+                          <Button type="submit" disabled={intMutation.isPending}>
+                            {intMutation.isPending ? "Salvando..." : editMode ? "Actualizar" : "Criar"}
+                          </Button>
+                        </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      {isAdmin && <TableHead className="w-20">Acções</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {loadingInt ? (
+                      <TableRow><TableCell colSpan={2} className="text-center py-8">Carregando...</TableCell></TableRow>
+                    ) : intendencias.length === 0 ? (
+                      <TableRow><TableCell colSpan={2} className="text-center py-8 text-muted-foreground">Nenhuma intendência</TableCell></TableRow>
+                    ) : intendencias.map((item: any) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.nome}</TableCell>
+                        {isAdmin && (
+                          <TableCell>
+                            <Button size="sm" variant="ghost" onClick={() => openEdit("int", item)}>
+                              <Pencil size={14} />
+                            </Button>
+                          </TableCell>
+                        )}
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* CIRCUITOS */}
+          <TabsContent value="circuitos">
+            <Card>
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-base">{circuitos.length} circuitos</CardTitle>
+                {isAdmin && (
+                  <Dialog open={circDialogOpen} onOpenChange={(v) => { setCircDialogOpen(v); if (!v) resetForm(); }}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" disabled={intendencias.length === 0}>
+                        <Plus size={16} className="mr-1" /> Novo Circuito
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader><DialogTitle>{editMode ? "Editar" : "Criar"} Circuito</DialogTitle></DialogHeader>
+                      <form className="space-y-4 mt-2" onSubmit={(e) => { e.preventDefault(); circMutation.mutate(); }}>
+                        <div className="space-y-2">
+                          <Label>Intendência *</Label>
+                          <Select value={selectedIntendencia} onValueChange={setSelectedIntendencia} required>
+                            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                            <SelectContent>
+                              {intendencias.map((i: any) => (
+                                <SelectItem key={i.id} value={i.id}>{i.nome}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Nome do Circuito *</Label>
+                          <Input placeholder="Ex: Circuito Luanda" value={nome} onChange={(e) => setNome(e.target.value)} required />
+                        </div>
+                        <div className="flex justify-end gap-3">
+                          <Button type="button" variant="outline" onClick={() => { setCircDialogOpen(false); resetForm(); }}>Cancelar</Button>
+                          <Button type="submit" disabled={circMutation.isPending}>
+                            {circMutation.isPending ? "Salvando..." : editMode ? "Actualizar" : "Criar"}
+                          </Button>
+                        </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Intendência</TableHead>
+                      {isAdmin && <TableHead className="w-20">Acções</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {loadingCirc ? (
+                      <TableRow><TableCell colSpan={3} className="text-center py-8">Carregando...</TableCell></TableRow>
+                    ) : circuitos.length === 0 ? (
+                      <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground">Nenhum circuito — crie uma intendência primeiro</TableCell></TableRow>
+                    ) : circuitos.map((item: any) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.nome}</TableCell>
+                        <TableCell>{(item.intendencias as any)?.nome || "—"}</TableCell>
+                        {isAdmin && (
+                          <TableCell>
+                            <Button size="sm" variant="ghost" onClick={() => openEdit("circ", item)}>
+                              <Pencil size={14} />
+                            </Button>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* IGREJAS */}
+          <TabsContent value="igrejas">
+            <Card>
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-base">{igrejas.length} igrejas (cargos pastorais)</CardTitle>
+                {isAdmin && (
+                  <Dialog open={igrDialogOpen} onOpenChange={(v) => { setIgrDialogOpen(v); if (!v) resetForm(); }}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" disabled={circuitos.length === 0}>
+                        <Plus size={16} className="mr-1" /> Nova Igreja
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader><DialogTitle>{editMode ? "Editar" : "Criar"} Igreja</DialogTitle></DialogHeader>
+                      <form className="space-y-4 mt-2" onSubmit={(e) => { e.preventDefault(); igrMutation.mutate(); }}>
+                        <div className="space-y-2">
+                          <Label>Intendência *</Label>
+                          <Select value={selectedIntendencia} onValueChange={(v) => { setSelectedIntendencia(v); setSelectedCircuito(""); }}>
+                            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                            <SelectContent>
+                              {intendencias.map((i: any) => (
+                                <SelectItem key={i.id} value={i.id}>{i.nome}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Circuito *</Label>
+                          <Select value={selectedCircuito} onValueChange={setSelectedCircuito} required disabled={!selectedIntendencia}>
+                            <SelectTrigger><SelectValue placeholder={selectedIntendencia ? "Selecione" : "Selecione intendência primeiro"} /></SelectTrigger>
+                            <SelectContent>
+                              {filteredCircuitos.map((c: any) => (
+                                <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Nome da Igreja *</Label>
+                          <Input placeholder="Ex: Igreja Bom Pastor" value={nome} onChange={(e) => setNome(e.target.value)} required />
+                        </div>
+                        <div className="flex justify-end gap-3">
+                          <Button type="button" variant="outline" onClick={() => { setIgrDialogOpen(false); resetForm(); }}>Cancelar</Button>
+                          <Button type="submit" disabled={igrMutation.isPending}>
+                            {igrMutation.isPending ? "Salvando..." : editMode ? "Actualizar" : "Criar"}
+                          </Button>
+                        </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Circuito</TableHead>
+                      <TableHead>Intendência</TableHead>
+                      {isAdmin && <TableHead className="w-20">Acções</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {loadingIgr ? (
+                      <TableRow><TableCell colSpan={4} className="text-center py-8">Carregando...</TableCell></TableRow>
+                    ) : igrejas.length === 0 ? (
+                      <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Nenhuma igreja — crie um circuito primeiro</TableCell></TableRow>
+                    ) : igrejas.map((item: any) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.nome}</TableCell>
+                        <TableCell>{(item.circuitos as any)?.nome || "—"}</TableCell>
+                        <TableCell>{(item.circuitos as any)?.intendencias?.nome || "—"}</TableCell>
+                        {isAdmin && (
+                          <TableCell>
+                            <Button size="sm" variant="ghost" onClick={() => openEdit("igr", item)}>
+                              <Pencil size={14} />
+                            </Button>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );

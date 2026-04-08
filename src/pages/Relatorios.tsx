@@ -31,7 +31,7 @@ const Relatorios = () => {
   const [comentario, setComentario] = useState("");
   const [ano, setAno] = useState(String(currentYear));
   const [semestre, setSemestre] = useState(String(currentSemestre));
-  const [estruturaId, setEstruturaId] = useState("");
+  const [igrejaId, setIgrejaId] = useState("");
   const { toast } = useToast();
   const { user, isAdmin, userEstruturas } = useAuth();
   const queryClient = useQueryClient();
@@ -41,17 +41,17 @@ const Relatorios = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("relatorios")
-        .select("*, estruturas(cargo_pastoral, intendencia, circuito)")
+        .select("*, igrejas(nome, circuitos(nome, intendencias(nome)))")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
   });
 
-  const { data: estruturas = [] } = useQuery({
-    queryKey: ["estruturas"],
+  const { data: igrejas = [] } = useQuery({
+    queryKey: ["igrejas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("estruturas").select("*").order("intendencia");
+      const { data, error } = await supabase.from("igrejas").select("*, circuitos(nome, intendencias(nome))").order("nome");
       if (error) throw error;
       return data;
     },
@@ -59,10 +59,10 @@ const Relatorios = () => {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const eid = isAdmin ? estruturaId : userEstruturas[0];
-      if (!eid) throw new Error("Sem estrutura");
+      const eid = isAdmin ? igrejaId : userEstruturas[0];
+      if (!eid) throw new Error("Sem igreja associada");
       const { error } = await supabase.from("relatorios").insert({
-        estrutura_id: eid, ano: parseInt(ano), semestre: parseInt(semestre),
+        igreja_id: eid, ano: parseInt(ano), semestre: parseInt(semestre),
         status: "rascunho" as any, created_by: user?.id,
       });
       if (error) throw error;
@@ -117,12 +117,14 @@ const Relatorios = () => {
               <form className="space-y-4 mt-2" onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }}>
                 {isAdmin && (
                   <div className="space-y-2">
-                    <Label>Estrutura *</Label>
-                    <Select value={estruturaId} onValueChange={setEstruturaId} required>
+                    <Label>Igreja *</Label>
+                    <Select value={igrejaId} onValueChange={setIgrejaId} required>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
-                        {estruturas.map((e: any) => (
-                          <SelectItem key={e.id} value={e.id}>{e.cargo_pastoral}</SelectItem>
+                        {igrejas.map((i: any) => (
+                          <SelectItem key={i.id} value={i.id}>
+                            {(i.circuitos as any)?.intendencias?.nome} → {(i.circuitos as any)?.nome} → {i.nome}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -169,7 +171,7 @@ const Relatorios = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Cargo Pastoral</TableHead>
+                    <TableHead>Igreja</TableHead>
                     <TableHead>Ano</TableHead>
                     <TableHead>Semestre</TableHead>
                     <TableHead>Data Submissão</TableHead>
@@ -187,7 +189,7 @@ const Relatorios = () => {
                       const cfg = statusConfig[r.status] || statusConfig.rascunho;
                       return (
                         <TableRow key={r.id}>
-                          <TableCell className="font-medium">{(r.estruturas as any)?.cargo_pastoral || "—"}</TableCell>
+                          <TableCell className="font-medium">{(r.igrejas as any)?.nome || "—"}</TableCell>
                           <TableCell>{r.ano}</TableCell>
                           <TableCell>{r.semestre}º</TableCell>
                           <TableCell>{r.data_submissao ? new Date(r.data_submissao).toLocaleDateString("pt-AO") : "—"}</TableCell>
@@ -224,7 +226,7 @@ const Relatorios = () => {
             <DialogHeader><DialogTitle>Analisar Relatório</DialogTitle></DialogHeader>
             {selectedRelatorio && (
               <div className="space-y-4">
-                <p className="text-sm"><strong>Cargo Pastoral:</strong> {(selectedRelatorio.estruturas as any)?.cargo_pastoral}</p>
+                <p className="text-sm"><strong>Igreja:</strong> {(selectedRelatorio.igrejas as any)?.nome}</p>
                 <p className="text-sm"><strong>Período:</strong> {selectedRelatorio.semestre}º Semestre {selectedRelatorio.ano}</p>
                 <div className="space-y-2">
                   <Label>Comentário</Label>
