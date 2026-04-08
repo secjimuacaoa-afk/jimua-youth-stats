@@ -14,16 +14,222 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      estruturas: {
+        Row: {
+          cargo_pastoral: string
+          circuito: string
+          created_at: string
+          id: string
+          intendencia: string
+        }
+        Insert: {
+          cargo_pastoral: string
+          circuito: string
+          created_at?: string
+          id?: string
+          intendencia: string
+        }
+        Update: {
+          cargo_pastoral?: string
+          circuito?: string
+          created_at?: string
+          id?: string
+          intendencia?: string
+        }
+        Relationships: []
+      }
+      jovens: {
+        Row: {
+          activo: boolean
+          categoria: string
+          created_at: string
+          created_by: string | null
+          data_nascimento: string
+          escolaridade: string | null
+          estado_civil: string | null
+          estrutura_id: string
+          id: string
+          motivo_inactividade: string | null
+          nome: string
+          ocupacao: string | null
+          origem: string | null
+          sexo: Database["public"]["Enums"]["sexo_tipo"]
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          categoria: string
+          created_at?: string
+          created_by?: string | null
+          data_nascimento: string
+          escolaridade?: string | null
+          estado_civil?: string | null
+          estrutura_id: string
+          id?: string
+          motivo_inactividade?: string | null
+          nome: string
+          ocupacao?: string | null
+          origem?: string | null
+          sexo: Database["public"]["Enums"]["sexo_tipo"]
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          categoria?: string
+          created_at?: string
+          created_by?: string | null
+          data_nascimento?: string
+          escolaridade?: string | null
+          estado_civil?: string | null
+          estrutura_id?: string
+          id?: string
+          motivo_inactividade?: string | null
+          nome?: string
+          ocupacao?: string | null
+          origem?: string | null
+          sexo?: Database["public"]["Enums"]["sexo_tipo"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jovens_estrutura_id_fkey"
+            columns: ["estrutura_id"]
+            isOneToOne: false
+            referencedRelation: "estruturas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          activo: boolean
+          created_at: string
+          id: string
+          nome_completo: string
+          tipo: Database["public"]["Enums"]["user_tipo"]
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          id: string
+          nome_completo: string
+          tipo?: Database["public"]["Enums"]["user_tipo"]
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nome_completo?: string
+          tipo?: Database["public"]["Enums"]["user_tipo"]
+        }
+        Relationships: []
+      }
+      relatorios: {
+        Row: {
+          ano: number
+          comentario_admin: string | null
+          created_at: string
+          created_by: string | null
+          data_submissao: string | null
+          estrutura_id: string
+          id: string
+          semestre: number
+          status: Database["public"]["Enums"]["relatorio_status"]
+        }
+        Insert: {
+          ano: number
+          comentario_admin?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_submissao?: string | null
+          estrutura_id: string
+          id?: string
+          semestre: number
+          status?: Database["public"]["Enums"]["relatorio_status"]
+        }
+        Update: {
+          ano?: number
+          comentario_admin?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_submissao?: string | null
+          estrutura_id?: string
+          id?: string
+          semestre?: number
+          status?: Database["public"]["Enums"]["relatorio_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relatorios_estrutura_id_fkey"
+            columns: ["estrutura_id"]
+            isOneToOne: false
+            referencedRelation: "estruturas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_estruturas: {
+        Row: {
+          estrutura_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          estrutura_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          estrutura_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_estruturas_estrutura_id_fkey"
+            columns: ["estrutura_id"]
+            isOneToOne: false
+            referencedRelation: "estruturas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "local"
+      relatorio_status: "rascunho" | "submetido" | "aprovado" | "rejeitado"
+      sexo_tipo: "masculino" | "feminino"
+      user_tipo: "admin" | "local"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +356,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "local"],
+      relatorio_status: ["rascunho", "submetido", "aprovado", "rejeitado"],
+      sexo_tipo: ["masculino", "feminino"],
+      user_tipo: ["admin", "local"],
+    },
   },
 } as const
