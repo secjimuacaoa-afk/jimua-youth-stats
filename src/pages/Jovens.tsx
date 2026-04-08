@@ -5,44 +5,82 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Filter, Download } from "lucide-react";
+import { Search, Plus, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-interface Jovem {
-  id: string;
-  nome: string;
-  sexo: "M" | "F";
-  dataNascimento: string;
-  parteEtaria: "H" | "I";
-  categoria: string;
-  cargoPastoral: string;
-  activo: boolean;
-}
-
-const mockJovens: Jovem[] = [
-  { id: "1", nome: "João Manuel Silva", sexo: "M", dataNascimento: "2004-03-15", parteEtaria: "I", categoria: "J", cargoPastoral: "Igreja Bom Pastor", activo: true },
-  { id: "2", nome: "Maria Fernanda Costa", sexo: "F", dataNascimento: "2008-07-22", parteEtaria: "H", categoria: "K", cargoPastoral: "Igreja Esperança", activo: true },
-  { id: "3", nome: "Pedro António Neto", sexo: "M", dataNascimento: "2001-11-03", parteEtaria: "I", categoria: "L", cargoPastoral: "Igreja Bom Pastor", activo: false },
-  { id: "4", nome: "Ana Beatriz Santos", sexo: "F", dataNascimento: "2006-01-19", parteEtaria: "H", categoria: "J", cargoPastoral: "Igreja Nova Aliança", activo: true },
-  { id: "5", nome: "Carlos Eduardo Mendes", sexo: "M", dataNascimento: "2003-09-30", parteEtaria: "I", categoria: "K", cargoPastoral: "Igreja Esperança", activo: true },
-];
+const calcAge = (dob: string) => Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+const calcParteEtaria = (dob: string) => { const age = calcAge(dob); return age >= 12 && age <= 17 ? "H" : "I"; };
 
 const Jovens = () => {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [nome, setNome] = useState("");
+  const [sexo, setSexo] = useState("");
+  const [dataNascimento, setDataNascimento] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const [escolaridade, setEscolaridade] = useState("");
+  const [ocupacao, setOcupacao] = useState("");
+  const [estadoCivil, setEstadoCivil] = useState("");
+  const [origem, setOrigem] = useState("");
+  const [estruturaId, setEstruturaId] = useState("");
   const { toast } = useToast();
+  const { user, isAdmin, userEstruturas } = useAuth();
+  const queryClient = useQueryClient();
 
-  const filteredJovens = mockJovens.filter((j) =>
+  const { data: jovens = [], isLoading } = useQuery({
+    queryKey: ["jovens"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("jovens")
+        .select("*, estruturas(cargo_pastoral, intendencia, circuito)")
+        .order("nome");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: estruturas = [] } = useQuery({
+    queryKey: ["estruturas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("estruturas").select("*").order("intendencia");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const eid = isAdmin ? estruturaId : userEstruturas[0];
+      if (!eid) throw new Error("Sem estrutura associada");
+      const { error } = await supabase.from("jovens").insert({
+        nome, sexo: sexo as any, data_nascimento: dataNascimento, categoria,
+        escolaridade: escolaridade || null, ocupacao: ocupacao || null,
+        estado_civil: estadoCivil || null, origem: origem || null,
+        estrutura_id: eid, created_by: user?.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Jovem registado com sucesso" });
+      setDialogOpen(false);
+      setNome(""); setSexo(""); setDataNascimento(""); setCategoria("");
+      setEscolaridade(""); setOcupacao(""); setEstadoCivil(""); setOrigem(""); setEstruturaId("");
+      queryClient.invalidateQueries({ queryKey: ["jovens"] });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const filteredJovens = jovens.filter((j: any) =>
     j.nome.toLowerCase().includes(search.toLowerCase())
   );
-
-  const calcAge = (dob: string) => {
-    const diff = Date.now() - new Date(dob).getTime();
-    return Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000));
-  };
 
   return (
     <DashboardLayout>
@@ -63,38 +101,44 @@ const Jovens = () => {
               <DialogHeader>
                 <DialogTitle>Registar Novo Jovem</DialogTitle>
               </DialogHeader>
-              <form
-                className="space-y-4 mt-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  setDialogOpen(false);
-                  toast({ title: "Jovem registado", description: "O jovem foi adicionado com sucesso." });
-                }}
-              >
+              <form className="space-y-4 mt-2" onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }}>
                 <div className="space-y-2">
                   <Label>Nome Completo *</Label>
-                  <Input placeholder="Nome do jovem" required />
+                  <Input placeholder="Nome do jovem" value={nome} onChange={(e) => setNome(e.target.value)} required />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Sexo *</Label>
-                    <Select required>
+                    <Select value={sexo} onValueChange={setSexo} required>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="M">Masculino</SelectItem>
-                        <SelectItem value="F">Feminino</SelectItem>
+                        <SelectItem value="masculino">Masculino</SelectItem>
+                        <SelectItem value="feminino">Feminino</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Data de Nascimento *</Label>
-                    <Input type="date" required />
+                    <Input type="date" value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} required />
                   </div>
                 </div>
+                {isAdmin && (
+                  <div className="space-y-2">
+                    <Label>Estrutura (Cargo Pastoral) *</Label>
+                    <Select value={estruturaId} onValueChange={setEstruturaId} required>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        {estruturas.map((e: any) => (
+                          <SelectItem key={e.id} value={e.id}>{e.intendencia} → {e.circuito} → {e.cargo_pastoral}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Categoria *</Label>
-                    <Select required>
+                    <Select value={categoria} onValueChange={setCategoria} required>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="J">J</SelectItem>
@@ -105,7 +149,7 @@ const Jovens = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>Escolaridade</Label>
-                    <Select>
+                    <Select value={escolaridade} onValueChange={setEscolaridade}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
                         {["M", "N", "O", "P", "P1", "P2", "Q"].map((v) => (
@@ -118,7 +162,7 @@ const Jovens = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Ocupação</Label>
-                    <Select>
+                    <Select value={ocupacao} onValueChange={setOcupacao}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
                         {["R", "S", "T", "U", "V", "W", "X", "X1"].map((v) => (
@@ -129,7 +173,7 @@ const Jovens = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>Estado Civil</Label>
-                    <Select>
+                    <Select value={estadoCivil} onValueChange={setEstadoCivil}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Y">Y</SelectItem>
@@ -140,7 +184,7 @@ const Jovens = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>Origem</Label>
-                  <Select>
+                  <Select value={origem} onValueChange={setOrigem}>
                     <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
                       {["A", "A1", "A2", "B", "B1"].map((v) => (
@@ -150,11 +194,9 @@ const Jovens = () => {
                   </Select>
                 </div>
                 <div className="flex justify-end gap-3 pt-2">
-                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button type="submit" className="bg-primary text-primary-foreground">
-                    Registar
+                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+                  <Button type="submit" className="bg-primary text-primary-foreground" disabled={createMutation.isPending}>
+                    {createMutation.isPending ? "Registando..." : "Registar"}
                   </Button>
                 </div>
               </form>
@@ -162,37 +204,20 @@ const Jovens = () => {
           </Dialog>
         </div>
 
-        {/* Filters */}
         <Card>
           <CardContent className="py-4">
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Pesquisar por nome..."
-                  className="pl-9"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
+                <Input placeholder="Pesquisar por nome..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
-              <Button variant="outline" size="default">
-                <Filter size={16} className="mr-2" />
-                Filtros
-              </Button>
-              <Button variant="outline" size="default">
-                <Download size={16} className="mr-2" />
-                Exportar
-              </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Table */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">
-              {filteredJovens.length} jovens encontrados
-            </CardTitle>
+            <CardTitle className="text-base">{filteredJovens.length} jovens encontrados</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -209,25 +234,31 @@ const Jovens = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredJovens.map((jovem) => (
-                    <TableRow key={jovem.id} className="cursor-pointer hover:bg-muted/50">
-                      <TableCell className="font-medium">{jovem.nome}</TableCell>
-                      <TableCell>{jovem.sexo === "M" ? "Masculino" : "Feminino"}</TableCell>
-                      <TableCell>{calcAge(jovem.dataNascimento)}</TableCell>
-                      <TableCell>
-                        <Badge variant={jovem.parteEtaria === "H" ? "secondary" : "default"}>
-                          {jovem.parteEtaria === "H" ? "12–17" : "18–25"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{jovem.categoria}</TableCell>
-                      <TableCell className="text-sm">{jovem.cargoPastoral}</TableCell>
-                      <TableCell>
-                        <Badge variant={jovem.activo ? "default" : "destructive"}>
-                          {jovem.activo ? "Activo" : "Inactivo"}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {isLoading ? (
+                    <TableRow><TableCell colSpan={7} className="text-center py-8">Carregando...</TableCell></TableRow>
+                  ) : filteredJovens.length === 0 ? (
+                    <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhum jovem registado</TableCell></TableRow>
+                  ) : (
+                    filteredJovens.map((jovem: any) => (
+                      <TableRow key={jovem.id} className="cursor-pointer hover:bg-muted/50">
+                        <TableCell className="font-medium">{jovem.nome}</TableCell>
+                        <TableCell>{jovem.sexo === "masculino" ? "Masculino" : "Feminino"}</TableCell>
+                        <TableCell>{calcAge(jovem.data_nascimento)}</TableCell>
+                        <TableCell>
+                          <Badge variant={calcParteEtaria(jovem.data_nascimento) === "H" ? "secondary" : "default"}>
+                            {calcParteEtaria(jovem.data_nascimento) === "H" ? "12–17" : "18–25"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{jovem.categoria}</TableCell>
+                        <TableCell className="text-sm">{(jovem.estruturas as any)?.cargo_pastoral || "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant={jovem.activo ? "default" : "destructive"}>
+                            {jovem.activo ? "Activo" : "Inactivo"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
