@@ -20,7 +20,7 @@ const Utilizadores = () => {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [tipo, setTipo] = useState("local");
-  const [estruturaId, setEstruturaId] = useState("");
+  const [igrejaId, setIgrejaId] = useState("");
   const { toast } = useToast();
   const { session } = useAuth();
   const queryClient = useQueryClient();
@@ -28,19 +28,16 @@ const Utilizadores = () => {
   const { data: profiles = [], isLoading } = useQuery({
     queryKey: ["profiles"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
   });
 
-  const { data: estruturas = [] } = useQuery({
-    queryKey: ["estruturas"],
+  const { data: igrejas = [] } = useQuery({
+    queryKey: ["igrejas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("estruturas").select("*").order("intendencia");
+      const { data, error } = await supabase.from("igrejas").select("*, circuitos(nome, intendencias(nome))").order("nome");
       if (error) throw error;
       return data;
     },
@@ -49,7 +46,7 @@ const Utilizadores = () => {
   const { data: userEstruturas = [] } = useQuery({
     queryKey: ["all-user-estruturas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("user_estruturas").select("user_id, estrutura_id, estruturas(intendencia, circuito, cargo_pastoral)");
+      const { data, error } = await supabase.from("user_estruturas").select("user_id, igreja_id, igrejas(nome)");
       if (error) throw error;
       return data;
     },
@@ -58,7 +55,7 @@ const Utilizadores = () => {
   const createUserMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("create-user", {
-        body: { email, password: senha, nome_completo: nome, tipo, estrutura_id: tipo === "local" ? estruturaId : null },
+        body: { email, password: senha, nome_completo: nome, tipo, estrutura_id: tipo === "local" ? igrejaId : null },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -67,7 +64,7 @@ const Utilizadores = () => {
     onSuccess: () => {
       toast({ title: "Utilizador criado", description: "As credenciais foram geradas com sucesso." });
       setDialogOpen(false);
-      setNome(""); setEmail(""); setSenha(""); setTipo("local"); setEstruturaId("");
+      setNome(""); setEmail(""); setSenha(""); setTipo("local"); setIgrejaId("");
       queryClient.invalidateQueries({ queryKey: ["profiles"] });
     },
     onError: (err: Error) => {
@@ -75,11 +72,10 @@ const Utilizadores = () => {
     },
   });
 
-  const getEstrutura = (userId: string) => {
+  const getIgreja = (userId: string) => {
     const ue = userEstruturas.find((u: any) => u.user_id === userId);
-    if (!ue || !ue.estruturas) return "—";
-    const e = ue.estruturas as any;
-    return e.cargo_pastoral;
+    if (!ue || !ue.igrejas) return "—";
+    return (ue.igrejas as any).nome;
   };
 
   return (
@@ -126,13 +122,13 @@ const Utilizadores = () => {
                 </div>
                 {tipo === "local" && (
                   <div className="space-y-2">
-                    <Label>Estrutura (Cargo Pastoral) *</Label>
-                    <Select value={estruturaId} onValueChange={setEstruturaId} required>
+                    <Label>Igreja (Cargo Pastoral) *</Label>
+                    <Select value={igrejaId} onValueChange={setIgrejaId} required>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
-                        {estruturas.map((e: any) => (
-                          <SelectItem key={e.id} value={e.id}>
-                            {e.intendencia} → {e.circuito} → {e.cargo_pastoral}
+                        {igrejas.map((i: any) => (
+                          <SelectItem key={i.id} value={i.id}>
+                            {(i.circuitos as any)?.intendencias?.nome} → {(i.circuitos as any)?.nome} → {i.nome}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -161,7 +157,7 @@ const Utilizadores = () => {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Tipo</TableHead>
-                    <TableHead>Estrutura</TableHead>
+                    <TableHead>Igreja</TableHead>
                     <TableHead>Estado</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -180,7 +176,7 @@ const Utilizadores = () => {
                             {u.tipo === "admin" ? "Distrital" : "Local"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm">{getEstrutura(u.id)}</TableCell>
+                        <TableCell className="text-sm">{getIgreja(u.id)}</TableCell>
                         <TableCell>
                           <Badge variant={u.activo ? "default" : "destructive"}>
                             {u.activo ? "Activo" : "Inactivo"}
