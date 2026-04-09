@@ -50,9 +50,9 @@ const Login = () => {
           <div className="flex justify-center mb-4">
             <img src={logoJimua} alt="JIMUA" className="h-24 w-auto" />
           </div>
-          <h1 className="text-xl font-bold text-foreground">Sistema Estatístico</h1>
+          <h1 className="text-xl font-bold text-foreground">JIMUA ANALYTICS</h1>
           <p className="text-sm text-muted-foreground">
-            Juventude da Igreja Metodista Unida de Angola
+            Sistema de Gestão de dados Estatísticos
           </p>
         </CardHeader>
 
