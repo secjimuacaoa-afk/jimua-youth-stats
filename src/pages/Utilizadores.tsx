@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,18 @@ const Utilizadores = () => {
     },
   });
 
+  // Get churches that already have a local secretary
+  const occupiedChurchIds = useMemo(() => {
+    const localProfileIds = profiles.filter((p: any) => p.tipo === "local").map((p: any) => p.id);
+    return userEstruturas
+      .filter((ue: any) => localProfileIds.includes(ue.user_id) && ue.igreja_id)
+      .map((ue: any) => ue.igreja_id);
+  }, [profiles, userEstruturas]);
+
+  const availableIgrejas = useMemo(() => {
+    return igrejas.filter((i: any) => !occupiedChurchIds.includes(i.id));
+  }, [igrejas, occupiedChurchIds]);
+
   const createUserMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("create-user", {
@@ -66,6 +78,7 @@ const Utilizadores = () => {
       setDialogOpen(false);
       setNome(""); setEmail(""); setSenha(""); setTipo("local"); setIgrejaId("");
       queryClient.invalidateQueries({ queryKey: ["profiles"] });
+      queryClient.invalidateQueries({ queryKey: ["all-user-estruturas"] });
     },
     onError: (err: Error) => {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
@@ -126,11 +139,15 @@ const Utilizadores = () => {
                     <Select value={igrejaId} onValueChange={setIgrejaId} required>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
-                        {igrejas.map((i: any) => (
-                          <SelectItem key={i.id} value={i.id}>
-                            {(i.circuitos as any)?.intendencias?.nome} → {(i.circuitos as any)?.nome} → {i.nome}
-                          </SelectItem>
-                        ))}
+                        {availableIgrejas.length === 0 ? (
+                          <SelectItem value="none" disabled>Todas as igrejas já têm secretário</SelectItem>
+                        ) : (
+                          availableIgrejas.map((i: any) => (
+                            <SelectItem key={i.id} value={i.id}>
+                              {(i.circuitos as any)?.intendencias?.nome} → {(i.circuitos as any)?.nome} → {i.nome}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
