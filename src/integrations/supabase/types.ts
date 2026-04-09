@@ -97,10 +97,12 @@ export type Database = {
           created_at: string
           created_by: string | null
           data_nascimento: string
+          documentacao: string[] | null
           escolaridade: string | null
           estado_civil: string | null
           id: string
           igreja_id: string | null
+          is_oja: boolean
           motivo_inactividade: string | null
           nome: string
           ocupacao: string | null
@@ -114,10 +116,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           data_nascimento: string
+          documentacao?: string[] | null
           escolaridade?: string | null
           estado_civil?: string | null
           id?: string
           igreja_id?: string | null
+          is_oja?: boolean
           motivo_inactividade?: string | null
           nome: string
           ocupacao?: string | null
@@ -131,10 +135,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           data_nascimento?: string
+          documentacao?: string[] | null
           escolaridade?: string | null
           estado_civil?: string | null
           id?: string
           igreja_id?: string | null
+          is_oja?: boolean
           motivo_inactividade?: string | null
           nome?: string
           ocupacao?: string | null
@@ -151,6 +157,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      jovens_audit: {
+        Row: {
+          alterado_em: string
+          alterado_por: string | null
+          campo: string
+          id: string
+          jovem_id: string
+          valor_anterior: string | null
+          valor_novo: string | null
+        }
+        Insert: {
+          alterado_em?: string
+          alterado_por?: string | null
+          campo: string
+          id?: string
+          jovem_id: string
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Update: {
+          alterado_em?: string
+          alterado_por?: string | null
+          campo?: string
+          id?: string
+          jovem_id?: string
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {

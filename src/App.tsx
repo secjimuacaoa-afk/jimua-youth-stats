@@ -9,7 +9,6 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Jovens from "./pages/Jovens";
 import Estruturas from "./pages/Estruturas";
-import Relatorios from "./pages/Relatorios";
 import Utilizadores from "./pages/Utilizadores";
 import Estatisticas from "./pages/Estatisticas";
 import Configuracoes from "./pages/Configuracoes";
@@ -29,7 +28,6 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/jovens" element={<ProtectedRoute><Jovens /></ProtectedRoute>} />
             <Route path="/estruturas" element={<ProtectedRoute><Estruturas /></ProtectedRoute>} />
-            <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
             <Route path="/utilizadores" element={<ProtectedRoute adminOnly><Utilizadores /></ProtectedRoute>} />
             <Route path="/estatisticas" element={<ProtectedRoute><Estatisticas /></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />

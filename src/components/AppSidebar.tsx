@@ -1,6 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Church, FileText, UserCog, BarChart3, Settings, LogOut, ChevronLeft, ChevronRight,
+  LayoutDashboard, Users, Church, UserCog, BarChart3, Settings, LogOut, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { useState } from "react";
 import logoJimua from "@/assets/logo-jimua.png";
@@ -16,8 +16,7 @@ const AppSidebar = () => {
   const links = [
     { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { to: "/jovens", icon: Users, label: "Jovens" },
-    { to: "/estruturas", icon: Church, label: "Estruturas" },
-    { to: "/relatorios", icon: FileText, label: "Relatórios" },
+    ...(isAdmin ? [{ to: "/estruturas", icon: Church, label: "Estruturas" }] : []),
     ...(isAdmin ? [{ to: "/utilizadores", icon: UserCog, label: "Utilizadores" }] : []),
     { to: "/estatisticas", icon: BarChart3, label: "Estatísticas" },
     { to: "/configuracoes", icon: Settings, label: "Configurações" },
@@ -37,9 +36,9 @@ const AppSidebar = () => {
         <img src={logoJimua} alt="JIMUA" className="h-10 w-10 flex-shrink-0" />
         {!collapsed && (
           <div className="overflow-hidden">
-            <h2 className="text-sm font-bold text-sidebar-primary truncate">JIMUA</h2>
+            <h2 className="text-sm font-bold text-sidebar-primary truncate">JIMUA ANALYTICS</h2>
             <p className="text-xs text-sidebar-foreground/60 truncate">
-              {profile?.nome_completo || "Sistema Estatístico"}
+              {profile?.nome_completo || "Sistema de Gestão de dados Estatísticos"}
             </p>
           </div>
         )}
