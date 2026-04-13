@@ -5,37 +5,30 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, AlertTriangle, Upload } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  CATEGORIA_LABELS, ESCOLARIDADE_LABELS, OCUPACAO_LABELS, ESTADO_CIVIL_LABELS,
+  ORIGEM_LABELS, MOTIVO_INACTIVIDADE_LABELS, DOC_LABELS, getLabel, getOptions,
+} from "@/lib/labels";
 
 const calcAge = (dob: string) => Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
 const calcParteEtaria = (dob: string) => { const age = calcAge(dob); return age >= 12 && age <= 17 ? "H" : "I"; };
 
-const DOC_TYPES = [
-  { value: "cedula", label: "Registo de Nascimento (Cédula)" },
-  { value: "bi", label: "Bilhete de Identidade (BI)" },
-  { value: "passaporte", label: "Passaporte" },
-  { value: "carta_conducao", label: "Carta de Condução" },
-  { value: "sem_documentacao", label: "Sem documentação" },
-];
-
-const MOTIVOS_INACTIVIDADE = [
-  { value: "C", label: "Afastado (C)" },
-  { value: "D", label: "Falecido (D)" },
-  { value: "E", label: "Estudo/Trabalho (E)" },
-  { value: "F", label: "Saúde (F)" },
-  { value: "G", label: "Disciplinares (G)" },
-  { value: "G1", label: "Desconhecidas (G1)" },
-];
+const DOC_TYPES = getOptions(DOC_LABELS);
+const MOTIVOS = getOptions(MOTIVO_INACTIVIDADE_LABELS);
+const currentYear = new Date().getFullYear();
+const YEARS = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
 interface JovemFormData {
   nome: string;
@@ -49,12 +42,16 @@ interface JovemFormData {
   activo: boolean;
   motivoInactividade: string;
   documentacao: string[];
+  semestre: number;
+  anoSemestre: number;
+  documentoFile: File | null;
 }
 
 const emptyForm: JovemFormData = {
   nome: "", sexo: "", dataNascimento: "", categoria: "",
   escolaridade: "", ocupacao: "", estadoCivil: "", origem: "",
   activo: true, motivoInactividade: "", documentacao: [],
+  semestre: 1, anoSemestre: currentYear, documentoFile: null,
 };
 
 const JovemForm = ({
@@ -114,7 +111,7 @@ const JovemForm = ({
           <Input type="date" value={form.dataNascimento} onChange={(e) => setForm({ ...form, dataNascimento: e.target.value })} required />
           {age !== null && (
             <p className={`text-xs ${isOja ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
-              Idade: {age} anos {isOja ? "(OJA)" : ""}
+              Idade: {age} anos {isOja ? "(OJA — Jovem Adulto)" : ""}
             </p>
           )}
         </div>
@@ -126,9 +123,9 @@ const JovemForm = ({
           <Select value={form.categoria} onValueChange={(v) => setForm({ ...form, categoria: v })} required>
             <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="J">J</SelectItem>
-              <SelectItem value="K">K</SelectItem>
-              <SelectItem value="L">L</SelectItem>
+              {getOptions(CATEGORIA_LABELS).map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -137,8 +134,8 @@ const JovemForm = ({
           <Select value={form.escolaridade} onValueChange={(v) => setForm({ ...form, escolaridade: v })}>
             <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
             <SelectContent>
-              {["M", "N", "O", "P", "P1", "P2", "Q"].map((v) => (
-                <SelectItem key={v} value={v}>{v}</SelectItem>
+              {getOptions(ESCOLARIDADE_LABELS).map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -151,8 +148,8 @@ const JovemForm = ({
           <Select value={form.ocupacao} onValueChange={(v) => setForm({ ...form, ocupacao: v })}>
             <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
             <SelectContent>
-              {["R", "S", "T", "U", "V", "W", "X", "X1"].map((v) => (
-                <SelectItem key={v} value={v}>{v}</SelectItem>
+              {getOptions(OCUPACAO_LABELS).map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -162,8 +159,9 @@ const JovemForm = ({
           <Select value={form.estadoCivil} onValueChange={(v) => setForm({ ...form, estadoCivil: v })}>
             <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="Y">Y (Solteiro)</SelectItem>
-              <SelectItem value="Z">Z (Casado)</SelectItem>
+              {getOptions(ESTADO_CIVIL_LABELS).map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -174,14 +172,39 @@ const JovemForm = ({
         <Select value={form.origem} onValueChange={(v) => setForm({ ...form, origem: v })}>
           <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
           <SelectContent>
-            {["A", "A1", "A2", "B", "B1"].map((v) => (
-              <SelectItem key={v} value={v}>{v}</SelectItem>
+            {getOptions(ORIGEM_LABELS).map((o) => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      {/* Documentação */}
+      {/* Semestre */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Semestre *</Label>
+          <Select value={String(form.semestre)} onValueChange={(v) => setForm({ ...form, semestre: Number(v) })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">1º Semestre</SelectItem>
+              <SelectItem value="2">2º Semestre</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Ano *</Label>
+          <Select value={String(form.anoSemestre)} onValueChange={(v) => setForm({ ...form, anoSemestre: Number(v) })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {YEARS.map((y) => (
+                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Documentação checkboxes */}
       <div className="space-y-2">
         <Label>Documentação *</Label>
         <div className="grid grid-cols-1 gap-2 p-3 border rounded-md bg-muted/30">
@@ -197,6 +220,17 @@ const JovemForm = ({
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Upload documento */}
+      <div className="space-y-2">
+        <Label>Anexar Documento (opcional)</Label>
+        <Input
+          type="file"
+          accept="image/*,.pdf"
+          onChange={(e) => setForm({ ...form, documentoFile: e.target.files?.[0] || null })}
+        />
+        <p className="text-xs text-muted-foreground">Imagem ou PDF do documento</p>
       </div>
 
       {/* Estado */}
@@ -217,7 +251,7 @@ const JovemForm = ({
             <Select value={form.motivoInactividade} onValueChange={(v) => setForm({ ...form, motivoInactividade: v })} required>
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>
-                {MOTIVOS_INACTIVIDADE.map((m) => (
+                {MOTIVOS.map((m) => (
                   <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
                 ))}
               </SelectContent>
@@ -243,6 +277,7 @@ const Jovens = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedJovem, setSelectedJovem] = useState<any>(null);
   const [form, setForm] = useState<JovemFormData>({ ...emptyForm });
+  const [activeTab, setActiveTab] = useState("contabilizados");
   const { toast } = useToast();
   const { user, isAdmin, userEstruturas } = useAuth();
   const queryClient = useQueryClient();
@@ -250,6 +285,8 @@ const Jovens = () => {
   const [filterIntendencia, setFilterIntendencia] = useState("");
   const [filterCircuito, setFilterCircuito] = useState("");
   const [filterIgreja, setFilterIgreja] = useState("");
+  const [filterSemestre, setFilterSemestre] = useState("");
+  const [filterAno, setFilterAno] = useState("");
 
   const { data: intendencias = [] } = useQuery({
     queryKey: ["intendencias"],
@@ -295,20 +332,36 @@ const Jovens = () => {
     enabled: isAdmin ? !!filterIgreja : true,
   });
 
+  const uploadDoc = async (file: File, jovemId: string): Promise<string | null> => {
+    const ext = file.name.split(".").pop();
+    const path = `${jovemId}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("documentos-jovens").upload(path, file);
+    if (error) { console.error(error); return null; }
+    const { data } = supabase.storage.from("documentos-jovens").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
   const createMutation = useMutation({
     mutationFn: async () => {
       const igrejaId = userEstruturas[0];
       if (!igrejaId) throw new Error("Sem igreja associada");
       const age = form.dataNascimento ? calcAge(form.dataNascimento) : 0;
-      const { error } = await supabase.from("jovens").insert({
+      const { data: inserted, error } = await supabase.from("jovens").insert({
         nome: form.nome, sexo: form.sexo as any, data_nascimento: form.dataNascimento,
         categoria: form.categoria, escolaridade: form.escolaridade || null,
         ocupacao: form.ocupacao || null, estado_civil: form.estadoCivil || null,
         origem: form.origem || null, igreja_id: igrejaId, created_by: user?.id,
         activo: form.activo, motivo_inactividade: !form.activo ? form.motivoInactividade : null,
         documentacao: form.documentacao, is_oja: age > 25,
-      });
+        semestre: form.semestre, ano_semestre: form.anoSemestre,
+      }).select("id").single();
       if (error) throw error;
+      if (form.documentoFile && inserted) {
+        const url = await uploadDoc(form.documentoFile, inserted.id);
+        if (url) {
+          await supabase.from("jovens").update({ documento_url: url }).eq("id", inserted.id);
+        }
+      }
     },
     onSuccess: () => {
       toast({ title: "Jovem registado com sucesso" });
@@ -323,14 +376,20 @@ const Jovens = () => {
     mutationFn: async () => {
       if (!selectedJovem) return;
       const age = form.dataNascimento ? calcAge(form.dataNascimento) : 0;
-      const { error } = await supabase.from("jovens").update({
+      const updates: any = {
         nome: form.nome, sexo: form.sexo as any, data_nascimento: form.dataNascimento,
         categoria: form.categoria, escolaridade: form.escolaridade || null,
         ocupacao: form.ocupacao || null, estado_civil: form.estadoCivil || null,
         origem: form.origem || null, activo: form.activo,
         motivo_inactividade: !form.activo ? form.motivoInactividade : null,
         documentacao: form.documentacao, is_oja: age > 25,
-      }).eq("id", selectedJovem.id);
+        semestre: form.semestre, ano_semestre: form.anoSemestre,
+      };
+      if (form.documentoFile) {
+        const url = await uploadDoc(form.documentoFile, selectedJovem.id);
+        if (url) updates.documento_url = url;
+      }
+      const { error } = await supabase.from("jovens").update(updates).eq("id", selectedJovem.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -366,12 +425,87 @@ const Jovens = () => {
       origem: jovem.origem || "", activo: jovem.activo,
       motivoInactividade: jovem.motivo_inactividade || "",
       documentacao: jovem.documentacao || [],
+      semestre: jovem.semestre || 1,
+      anoSemestre: jovem.ano_semestre || currentYear,
+      documentoFile: null,
     });
     setEditDialogOpen(true);
   };
 
-  const filteredJovens = jovens.filter((j: any) =>
-    j.nome.toLowerCase().includes(search.toLowerCase())
+  // Filter by search, semestre, ano
+  const allFiltered = useMemo(() => {
+    let list = jovens.filter((j: any) => j.nome.toLowerCase().includes(search.toLowerCase()));
+    if (filterSemestre) list = list.filter((j: any) => String(j.semestre) === filterSemestre);
+    if (filterAno) list = list.filter((j: any) => String(j.ano_semestre) === filterAno);
+    return list;
+  }, [jovens, search, filterSemestre, filterAno]);
+
+  const contabilizados = allFiltered.filter((j: any) => !j.is_oja);
+  const naoContabilizados = allFiltered.filter((j: any) => j.is_oja);
+
+  const renderTable = (list: any[], showActions: boolean) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Nome</TableHead>
+          <TableHead>Sexo</TableHead>
+          <TableHead>Idade</TableHead>
+          <TableHead>Parte Etária</TableHead>
+          <TableHead>Categoria</TableHead>
+          <TableHead>Igreja</TableHead>
+          <TableHead>Semestre</TableHead>
+          <TableHead>Estado</TableHead>
+          {showActions && <TableHead>Acções</TableHead>}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {isLoading ? (
+          <TableRow><TableCell colSpan={9} className="text-center py-8">Carregando...</TableCell></TableRow>
+        ) : list.length === 0 ? (
+          <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Nenhum jovem registado</TableCell></TableRow>
+        ) : (
+          list.map((jovem: any) => {
+            const age = calcAge(jovem.data_nascimento);
+            const isOja = age > 25;
+            return (
+              <TableRow key={jovem.id} className={isOja ? "opacity-60 bg-destructive/5" : ""}>
+                <TableCell className="font-medium">
+                  {jovem.nome}
+                  {isOja && <Badge variant="destructive" className="ml-2 text-xs">OJA</Badge>}
+                </TableCell>
+                <TableCell>{jovem.sexo === "masculino" ? "M" : "F"}</TableCell>
+                <TableCell>{age}</TableCell>
+                <TableCell>
+                  <Badge variant={isOja ? "destructive" : calcParteEtaria(jovem.data_nascimento) === "H" ? "secondary" : "default"}>
+                    {isOja ? "Jovem Adulto" : calcParteEtaria(jovem.data_nascimento) === "H" ? "12–17 anos" : "18–25 anos"}
+                  </Badge>
+                </TableCell>
+                <TableCell>{getLabel(CATEGORIA_LABELS, jovem.categoria)}</TableCell>
+                <TableCell className="text-sm">{(jovem.igrejas as any)?.nome || "—"}</TableCell>
+                <TableCell className="text-xs">{jovem.semestre ? `${jovem.semestre}º/${jovem.ano_semestre}` : "—"}</TableCell>
+                <TableCell>
+                  <Badge variant={jovem.activo ? "default" : "destructive"}>
+                    {jovem.activo ? "Activo" : "Inactivo"}
+                  </Badge>
+                </TableCell>
+                {showActions && (
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(jovem)}>
+                        <Pencil size={16} />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => { setSelectedJovem(jovem); setDeleteDialogOpen(true); }}>
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
+              </TableRow>
+            );
+          })
+        )}
+      </TableBody>
+    </Table>
   );
 
   return (
@@ -434,9 +568,26 @@ const Jovens = () => {
                   </Select>
                 </div>
               )}
-              <div className="relative flex-1">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input placeholder="Pesquisar por nome..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div className="relative sm:col-span-2">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input placeholder="Pesquisar por nome..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+                </div>
+                <Select value={filterSemestre} onValueChange={setFilterSemestre}>
+                  <SelectTrigger><SelectValue placeholder="Semestre" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="1">1º Semestre</SelectItem>
+                    <SelectItem value="2">2º Semestre</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={filterAno} onValueChange={setFilterAno}>
+                  <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {YEARS.map((y) => (<SelectItem key={y} value={String(y)}>{y}</SelectItem>))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>
@@ -449,75 +600,40 @@ const Jovens = () => {
             </CardContent>
           </Card>
         ) : (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">{filteredJovens.length} jovens encontrados</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Sexo</TableHead>
-                      <TableHead>Idade</TableHead>
-                      <TableHead>Parte Etária</TableHead>
-                      <TableHead>Categoria</TableHead>
-                      <TableHead>Igreja</TableHead>
-                      <TableHead>Estado</TableHead>
-                      {!isAdmin && <TableHead>Acções</TableHead>}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      <TableRow><TableCell colSpan={8} className="text-center py-8">Carregando...</TableCell></TableRow>
-                    ) : filteredJovens.length === 0 ? (
-                      <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nenhum jovem registado</TableCell></TableRow>
-                    ) : (
-                      filteredJovens.map((jovem: any) => {
-                        const age = calcAge(jovem.data_nascimento);
-                        const isOja = age > 25;
-                        return (
-                          <TableRow key={jovem.id} className={isOja ? "opacity-60 bg-destructive/5" : ""}>
-                            <TableCell className="font-medium">
-                              {jovem.nome}
-                              {isOja && <Badge variant="destructive" className="ml-2 text-xs">OJA</Badge>}
-                            </TableCell>
-                            <TableCell>{jovem.sexo === "masculino" ? "M" : "F"}</TableCell>
-                            <TableCell>{age}</TableCell>
-                            <TableCell>
-                              <Badge variant={isOja ? "destructive" : calcParteEtaria(jovem.data_nascimento) === "H" ? "secondary" : "default"}>
-                                {isOja ? "OJA" : calcParteEtaria(jovem.data_nascimento) === "H" ? "12–17" : "18–25"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{jovem.categoria}</TableCell>
-                            <TableCell className="text-sm">{(jovem.igrejas as any)?.nome || "—"}</TableCell>
-                            <TableCell>
-                              <Badge variant={jovem.activo ? "default" : "destructive"}>
-                                {jovem.activo ? "Activo" : "Inactivo"}
-                              </Badge>
-                            </TableCell>
-                            {!isAdmin && (
-                              <TableCell>
-                                <div className="flex gap-1">
-                                  <Button variant="ghost" size="icon" onClick={() => openEdit(jovem)}>
-                                    <Pencil size={16} />
-                                  </Button>
-                                  <Button variant="ghost" size="icon" className="text-destructive" onClick={() => { setSelectedJovem(jovem); setDeleteDialogOpen(true); }}>
-                                    <Trash2 size={16} />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            )}
-                          </TableRow>
-                        );
-                      })
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList>
+              <TabsTrigger value="contabilizados">
+                Jovens ({contabilizados.length})
+              </TabsTrigger>
+              <TabsTrigger value="nao-contabilizados">
+                Não Contabilizados — OJA ({naoContabilizados.length})
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="contabilizados">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">{contabilizados.length} jovens contabilizados</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    {renderTable(contabilizados, !isAdmin)}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="nao-contabilizados">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">{naoContabilizados.length} jovens não contabilizados (OJA &gt;25 anos)</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    {renderTable(naoContabilizados, !isAdmin)}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         )}
       </div>
 

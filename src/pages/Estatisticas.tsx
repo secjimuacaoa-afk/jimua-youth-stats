@@ -8,6 +8,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import {
+  CATEGORIA_LABELS, ESCOLARIDADE_LABELS, OCUPACAO_LABELS, ESTADO_CIVIL_LABELS,
+  ORIGEM_LABELS, MOTIVO_INACTIVIDADE_LABELS, getLabel,
+} from "@/lib/labels";
 
 const calcAge = (dob: string) => Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
 
@@ -31,11 +35,22 @@ const BarSimple = ({ data }: { data: { name: string; value: number }[] }) => {
 };
 
 const Estatisticas = () => {
-  const { isAdmin, userEstruturas } = useAuth();
+  const { isAdmin, isSuperAdmin, userEstruturas } = useAuth();
   const { toast } = useToast();
+  const [filterDistrito, setFilterDistrito] = useState("");
   const [filterIntendencia, setFilterIntendencia] = useState("");
   const [filterCircuito, setFilterCircuito] = useState("");
   const [filterIgreja, setFilterIgreja] = useState("");
+
+  const { data: distritos = [] } = useQuery({
+    queryKey: ["distritos"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("distritos").select("*").order("nome");
+      if (error) throw error;
+      return data;
+    },
+    enabled: isSuperAdmin,
+  });
 
   const { data: intendencias = [] } = useQuery({
     queryKey: ["intendencias"],
@@ -67,8 +82,13 @@ const Estatisticas = () => {
     enabled: isAdmin,
   });
 
-  const filteredCircuitos = filterIntendencia ? circuitos.filter((c: any) => c.intendencia_id === filterIntendencia) : [];
-  const filteredIgrejas = filterCircuito ? allIgrejas.filter((i: any) => i.circuito_id === filterCircuito) : [];
+  const filteredIntendencias = useMemo(() => {
+    if (!filterDistrito || filterDistrito === "all") return intendencias;
+    return intendencias.filter((i: any) => i.distrito_id === filterDistrito);
+  }, [intendencias, filterDistrito]);
+
+  const filteredCircuitos = filterIntendencia && filterIntendencia !== "all" ? circuitos.filter((c: any) => c.intendencia_id === filterIntendencia) : [];
+  const filteredIgrejas = filterCircuito && filterCircuito !== "all" ? allIgrejas.filter((i: any) => i.circuito_id === filterCircuito) : [];
 
   const { data: jovens = [] } = useQuery({
     queryKey: ["stats-jovens"],
@@ -80,10 +100,8 @@ const Estatisticas = () => {
   });
 
   const stats = useMemo(() => {
-    // Exclude OJA from statistics
     let filtered = jovens.filter((j: any) => !j.is_oja);
 
-    // Apply role-based + filter restrictions
     if (!isAdmin) {
       filtered = filtered.filter((j: any) => userEstruturas.includes(j.igreja_id));
     } else {
@@ -99,11 +117,11 @@ const Estatisticas = () => {
     const activos = filtered.filter((j: any) => j.activo);
     const total = activos.length;
 
-    const groupBy = (arr: any[], key: string, labelFn?: (v: string) => string) => {
+    const groupBy = (arr: any[], key: string, labelMap?: Record<string, string>) => {
       const counts: Record<string, number> = {};
       arr.forEach((j) => { const v = j[key]; if (v) counts[v] = (counts[v] || 0) + 1; });
-      return Object.entries(counts).map(([name, value]) => ({
-        name: labelFn ? labelFn(name) : name, value,
+      return Object.entries(counts).map(([code, value]) => ({
+        name: labelMap ? getLabel(labelMap, code) : code, value,
       }));
     };
 
@@ -115,18 +133,18 @@ const Estatisticas = () => {
       ],
       parteEtaria: (() => {
         const h = activos.filter((j: any) => calcAge(j.data_nascimento) >= 12 && calcAge(j.data_nascimento) <= 17).length;
-        return [{ name: "H (12–17)", value: h }, { name: "I (18–25)", value: total - h }];
+        return [{ name: "12–17 anos", value: h }, { name: "18–25 anos", value: total - h }];
       })(),
-      categoria: groupBy(activos, "categoria"),
-      escolaridade: groupBy(activos, "escolaridade"),
-      ocupacao: groupBy(activos, "ocupacao"),
-      estadoCivil: groupBy(activos, "estado_civil", (v) => v === "Y" ? "Y (Solteiro)" : "Z (Casado)"),
-      origem: groupBy(activos, "origem"),
+      categoria: groupBy(activos, "categoria", CATEGORIA_LABELS),
+      escolaridade: groupBy(activos, "escolaridade", ESCOLARIDADE_LABELS),
+      ocupacao: groupBy(activos, "ocupacao", OCUPACAO_LABELS),
+      estadoCivil: groupBy(activos, "estado_civil", ESTADO_CIVIL_LABELS),
+      origem: groupBy(activos, "origem", ORIGEM_LABELS),
       inactivos: filtered.filter((j: any) => !j.activo).length,
-      motivos: groupBy(filtered.filter((j: any) => !j.activo), "motivo_inactividade"),
+      motivos: groupBy(filtered.filter((j: any) => !j.activo), "motivo_inactividade", MOTIVO_INACTIVIDADE_LABELS),
       ojaCount: jovens.filter((j: any) => j.is_oja).length,
     };
-  }, [jovens, isAdmin, userEstruturas, filterIntendencia, filterCircuito, filterIgreja]);
+  }, [jovens, isAdmin, userEstruturas, filterDistrito, filterIntendencia, filterCircuito, filterIgreja]);
 
   const charts = [
     { label: "Distribuição por Sexo", data: stats.sexo },
@@ -142,12 +160,13 @@ const Estatisticas = () => {
   const handleExportPdf = async () => {
     const { default: jsPDF } = await import("jspdf");
     const doc = new jsPDF();
+    const exportDate = new Date().toLocaleDateString("pt-AO", { day: "2-digit", month: "long", year: "numeric" });
     doc.setFontSize(18);
     doc.text("JIMUA ANALYTICS", 14, 20);
     doc.setFontSize(12);
     doc.text("Mapa Estatístico da Juventude", 14, 28);
     doc.setFontSize(10);
-    doc.text(`Data: ${new Date().toLocaleDateString("pt-AO")}`, 14, 36);
+    doc.text(`Data de exportação: ${exportDate}`, 14, 36);
 
     let y = 48;
     doc.setFontSize(12);
@@ -166,14 +185,14 @@ const Estatisticas = () => {
       y += 4;
     });
 
-    doc.save("jimua-estatisticas.pdf");
+    doc.save(`jimua-estatisticas-${exportDate.replace(/\s/g, "-")}.pdf`);
     toast({ title: "PDF exportado com sucesso" });
   };
 
   const handleShareLink = () => {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url);
-    toast({ title: "Link copiado", description: "O link da página foi copiado para a área de transferência." });
+    const publicUrl = `${window.location.origin}/publico/estatisticas`;
+    navigator.clipboard.writeText(publicUrl);
+    toast({ title: "Link copiado", description: "Link de visualização pública copiado para a área de transferência." });
   };
 
   return (
@@ -193,7 +212,7 @@ const Estatisticas = () => {
             </Button>
             <Button variant="outline" onClick={handleShareLink}>
               <LinkIcon size={16} className="mr-2" />
-              Copiar Link
+              Gerar Link Público
             </Button>
           </div>
         </div>
@@ -201,12 +220,21 @@ const Estatisticas = () => {
         {isAdmin && (
           <Card>
             <CardContent className="py-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                {isSuperAdmin && (
+                  <Select value={filterDistrito} onValueChange={(v) => { setFilterDistrito(v); setFilterIntendencia(""); setFilterCircuito(""); setFilterIgreja(""); }}>
+                    <SelectTrigger><SelectValue placeholder="Todos os Distritos" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {distritos.map((d: any) => (<SelectItem key={d.id} value={d.id}>{d.nome}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                )}
                 <Select value={filterIntendencia} onValueChange={(v) => { setFilterIntendencia(v); setFilterCircuito(""); setFilterIgreja(""); }}>
                   <SelectTrigger><SelectValue placeholder="Todas as Intendências" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todas</SelectItem>
-                    {intendencias.map((i: any) => (<SelectItem key={i.id} value={i.id}>{i.nome}</SelectItem>))}
+                    {filteredIntendencias.map((i: any) => (<SelectItem key={i.id} value={i.id}>{i.nome}</SelectItem>))}
                   </SelectContent>
                 </Select>
                 <Select value={filterCircuito} onValueChange={(v) => { setFilterCircuito(v); setFilterIgreja(""); }} disabled={!filterIntendencia || filterIntendencia === "all"}>

@@ -36,14 +36,18 @@ Deno.serve(async (req) => {
     }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    const { data: roleData } = await adminClient
+
+    // Check caller roles
+    const { data: callerRoles } = await adminClient
       .from("user_roles")
       .select("role")
-      .eq("user_id", caller.id)
-      .eq("role", "admin")
-      .maybeSingle();
+      .eq("user_id", caller.id);
 
-    if (!roleData) {
+    const roles = callerRoles?.map((r: any) => r.role) || [];
+    const isSuperAdmin = roles.includes("super_admin");
+    const isAdmin = isSuperAdmin || roles.includes("admin");
+
+    if (!isAdmin) {
       return new Response(JSON.stringify({ error: "Apenas administradores podem criar utilizadores" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -51,11 +55,26 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { email, password, nome_completo, tipo, estrutura_id } = body;
+    const { email, password, nome_completo, tipo, estrutura_id, distrito_id } = body;
 
     if (!email || !password || !nome_completo || !tipo) {
       return new Response(JSON.stringify({ error: "Campos obrigatórios em falta" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Hierarchy enforcement
+    if (tipo === "super_admin") {
+      return new Response(JSON.stringify({ error: "Não é possível criar super administradores" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (tipo === "admin" && !isSuperAdmin) {
+      return new Response(JSON.stringify({ error: "Apenas o Secretário Geral pode criar Secretários Distritais" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -86,6 +105,14 @@ Deno.serve(async (req) => {
       await adminClient.from("user_estruturas").insert({
         user_id: newUser.user.id,
         igreja_id: estrutura_id,
+      });
+    }
+
+    // Associate with distrito if admin (distrital)
+    if (tipo === "admin" && distrito_id && newUser.user) {
+      await adminClient.from("user_estruturas").insert({
+        user_id: newUser.user.id,
+        distrito_id: distrito_id,
       });
     }
 

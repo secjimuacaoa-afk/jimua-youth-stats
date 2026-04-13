@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, Shield, User } from "lucide-react";
+import { UserPlus, Shield, User, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,8 +21,9 @@ const Utilizadores = () => {
   const [senha, setSenha] = useState("");
   const [tipo, setTipo] = useState("local");
   const [igrejaId, setIgrejaId] = useState("");
+  const [distritoId, setDistritoId] = useState("");
   const { toast } = useToast();
-  const { session } = useAuth();
+  const { session, isSuperAdmin, isAdmin } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: profiles = [], isLoading } = useQuery({
@@ -43,16 +44,25 @@ const Utilizadores = () => {
     },
   });
 
+  const { data: distritos = [] } = useQuery({
+    queryKey: ["distritos"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("distritos").select("*").order("nome");
+      if (error) throw error;
+      return data;
+    },
+    enabled: isSuperAdmin,
+  });
+
   const { data: userEstruturas = [] } = useQuery({
     queryKey: ["all-user-estruturas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("user_estruturas").select("user_id, igreja_id, igrejas(nome)");
+      const { data, error } = await supabase.from("user_estruturas").select("user_id, igreja_id, distrito_id, igrejas(nome)");
       if (error) throw error;
       return data;
     },
   });
 
-  // Get churches that already have a local secretary
   const occupiedChurchIds = useMemo(() => {
     const localProfileIds = profiles.filter((p: any) => p.tipo === "local").map((p: any) => p.id);
     return userEstruturas
@@ -64,11 +74,24 @@ const Utilizadores = () => {
     return igrejas.filter((i: any) => !occupiedChurchIds.includes(i.id));
   }, [igrejas, occupiedChurchIds]);
 
+  // Determine which user types the current user can create
+  const allowedTypes = useMemo(() => {
+    if (isSuperAdmin) return [
+      { value: "admin", label: "Secretário Distrital" },
+      { value: "local", label: "Secretário Local" },
+    ];
+    if (isAdmin) return [
+      { value: "local", label: "Secretário Local" },
+    ];
+    return [];
+  }, [isSuperAdmin, isAdmin]);
+
   const createUserMutation = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("create-user", {
-        body: { email, password: senha, nome_completo: nome, tipo, estrutura_id: tipo === "local" ? igrejaId : null },
-      });
+      const body: any = { email, password: senha, nome_completo: nome, tipo };
+      if (tipo === "local") body.estrutura_id = igrejaId;
+      if (tipo === "admin" && distritoId) body.distrito_id = distritoId;
+      const { data, error } = await supabase.functions.invoke("create-user", { body });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       return data;
@@ -76,7 +99,7 @@ const Utilizadores = () => {
     onSuccess: () => {
       toast({ title: "Utilizador criado", description: "As credenciais foram geradas com sucesso." });
       setDialogOpen(false);
-      setNome(""); setEmail(""); setSenha(""); setTipo("local"); setIgrejaId("");
+      setNome(""); setEmail(""); setSenha(""); setTipo("local"); setIgrejaId(""); setDistritoId("");
       queryClient.invalidateQueries({ queryKey: ["profiles"] });
       queryClient.invalidateQueries({ queryKey: ["all-user-estruturas"] });
     },
@@ -91,13 +114,27 @@ const Utilizadores = () => {
     return (ue.igrejas as any).nome;
   };
 
+  const getTypeIcon = (tipo: string) => {
+    if (tipo === "super_admin") return <Crown size={12} className="mr-1" />;
+    if (tipo === "admin") return <Shield size={12} className="mr-1" />;
+    return <User size={12} className="mr-1" />;
+  };
+
+  const getTypeLabel = (tipo: string) => {
+    if (tipo === "super_admin") return "Geral";
+    if (tipo === "admin") return "Distrital";
+    return "Local";
+  };
+
   return (
     <DashboardLayout>
       <div className="p-6 lg:p-8 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Gestão de Utilizadores</h1>
-            <p className="text-sm text-muted-foreground mt-1">Apenas o Secretário Distrital pode criar utilizadores</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {isSuperAdmin ? "Crie Secretários Distritais e Locais" : "Crie Secretários Locais para a sua região"}
+            </p>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
@@ -125,14 +162,28 @@ const Utilizadores = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>Tipo de Utilizador *</Label>
-                  <Select value={tipo} onValueChange={setTipo}>
+                  <Select value={tipo} onValueChange={(v) => { setTipo(v); setIgrejaId(""); setDistritoId(""); }}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="local">Secretário Local</SelectItem>
-                      <SelectItem value="admin">Administrador</SelectItem>
+                      {allowedTypes.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
+                {tipo === "admin" && isSuperAdmin && (
+                  <div className="space-y-2">
+                    <Label>Distrito *</Label>
+                    <Select value={distritoId} onValueChange={setDistritoId} required>
+                      <SelectTrigger><SelectValue placeholder="Selecione o distrito" /></SelectTrigger>
+                      <SelectContent>
+                        {distritos.map((d: any) => (
+                          <SelectItem key={d.id} value={d.id}>{d.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 {tipo === "local" && (
                   <div className="space-y-2">
                     <Label>Igreja (Cargo Pastoral) *</Label>
@@ -188,9 +239,9 @@ const Utilizadores = () => {
                       <TableRow key={u.id}>
                         <TableCell className="font-medium">{u.nome_completo}</TableCell>
                         <TableCell>
-                          <Badge variant={u.tipo === "admin" ? "default" : "secondary"}>
-                            {u.tipo === "admin" ? <Shield size={12} className="mr-1" /> : <User size={12} className="mr-1" />}
-                            {u.tipo === "admin" ? "Distrital" : "Local"}
+                          <Badge variant={u.tipo === "super_admin" ? "default" : u.tipo === "admin" ? "default" : "secondary"}>
+                            {getTypeIcon(u.tipo)}
+                            {getTypeLabel(u.tipo)}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm">{getIgreja(u.id)}</TableCell>
