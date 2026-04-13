@@ -1,6 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Church, UserCog, BarChart3, Settings, LogOut, ChevronLeft, ChevronRight,
+  LayoutDashboard, Users, Church, UserCog, BarChart3, Settings, LogOut, ChevronLeft, ChevronRight, Globe,
 } from "lucide-react";
 import { useState } from "react";
 import logoJimua from "@/assets/logo-jimua.png";
@@ -11,7 +11,7 @@ const AppSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, isAdmin, profile } = useAuth();
+  const { signOut, isAdmin, isSuperAdmin, profile } = useAuth();
 
   const links = [
     { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },

@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
+import { CATEGORIA_LABELS, ESCOLARIDADE_LABELS, getLabel } from "@/lib/labels";
 
 const calcAge = (dob: string) => Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
 
@@ -30,10 +31,21 @@ const BarSimple = ({ data, color = "from-primary to-navy-light" }: { data: { nam
 };
 
 const Dashboard = () => {
-  const { profile, isAdmin, userEstruturas } = useAuth();
+  const { profile, isAdmin, isSuperAdmin, userEstruturas, welcomeInfo } = useAuth();
+  const [filterDistrito, setFilterDistrito] = useState("");
   const [filterIntendencia, setFilterIntendencia] = useState("");
   const [filterCircuito, setFilterCircuito] = useState("");
   const [filterIgreja, setFilterIgreja] = useState("");
+
+  const { data: distritos = [] } = useQuery({
+    queryKey: ["distritos"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("distritos").select("*").order("nome");
+      if (error) throw error;
+      return data;
+    },
+    enabled: isSuperAdmin,
+  });
 
   const { data: intendencias = [] } = useQuery({
     queryKey: ["intendencias"],
@@ -85,21 +97,25 @@ const Dashboard = () => {
     enabled: !isAdmin && userEstruturas.length > 0,
   });
 
-  const filteredCircuitos = filterIntendencia ? circuitos.filter((c: any) => c.intendencia_id === filterIntendencia) : [];
-  const filteredIgrejas = filterCircuito ? allIgrejas.filter((i: any) => i.circuito_id === filterCircuito) : [];
+  const filteredIntendencias = useMemo(() => {
+    if (!filterDistrito || filterDistrito === "all") return intendencias;
+    return intendencias.filter((i: any) => i.distrito_id === filterDistrito);
+  }, [intendencias, filterDistrito]);
+
+  const filteredCircuitos = filterIntendencia && filterIntendencia !== "all" ? circuitos.filter((c: any) => c.intendencia_id === filterIntendencia) : [];
+  const filteredIgrejas = filterCircuito && filterCircuito !== "all" ? allIgrejas.filter((i: any) => i.circuito_id === filterCircuito) : [];
 
   const stats = useMemo(() => {
     let filtered = jovens.filter((j: any) => !j.is_oja);
 
-    // Apply filters
     if (!isAdmin) {
       filtered = filtered.filter((j: any) => userEstruturas.includes(j.igreja_id));
     } else {
-      if (filterIgreja) {
+      if (filterIgreja && filterIgreja !== "all") {
         filtered = filtered.filter((j: any) => j.igreja_id === filterIgreja);
-      } else if (filterCircuito) {
+      } else if (filterCircuito && filterCircuito !== "all") {
         filtered = filtered.filter((j: any) => (j.igrejas as any)?.circuito_id === filterCircuito);
-      } else if (filterIntendencia) {
+      } else if (filterIntendencia && filterIntendencia !== "all") {
         filtered = filtered.filter((j: any) => (j.igrejas as any)?.circuitos?.intendencia_id === filterIntendencia);
       }
     }
@@ -114,43 +130,34 @@ const Dashboard = () => {
     const estudantes = activos.filter((j: any) => ["M", "N", "O", "P", "P1", "P2"].includes(j.escolaridade)).length;
     const solteiros = activos.filter((j: any) => j.estado_civil === "Y").length;
 
-    // Church comparison for admin
     const churchCounts: { name: string; value: number }[] = [];
-    if (isAdmin && !filterIgreja) {
+    if (isAdmin && (!filterIgreja || filterIgreja === "all")) {
       const byChurch: Record<string, number> = {};
       activos.forEach((j: any) => {
         const name = (j.igrejas as any)?.nome || "Sem igreja";
         byChurch[name] = (byChurch[name] || 0) + 1;
       });
-      Object.entries(byChurch)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 10)
-        .forEach(([name, value]) => churchCounts.push({ name, value }));
+      Object.entries(byChurch).sort((a, b) => b[1] - a[1]).slice(0, 10).forEach(([name, value]) => churchCounts.push({ name, value }));
     }
 
-    // Category distribution
     const catCounts: Record<string, number> = {};
     activos.forEach((j: any) => { if (j.categoria) catCounts[j.categoria] = (catCounts[j.categoria] || 0) + 1; });
-    const categorias = Object.entries(catCounts).map(([name, value]) => ({ name, value }));
+    const categorias = Object.entries(catCounts).map(([code, value]) => ({ name: getLabel(CATEGORIA_LABELS, code), value }));
 
-    return {
-      total, inactivos: inactivos.length, masculino, feminino, h, i,
-      estudantes, solteiros, churchCounts, categorias,
-    };
-  }, [jovens, isAdmin, userEstruturas, filterIntendencia, filterCircuito, filterIgreja]);
+    return { total, inactivos: inactivos.length, masculino, feminino, h, i, estudantes, solteiros, churchCounts, categorias };
+  }, [jovens, isAdmin, userEstruturas, filterDistrito, filterIntendencia, filterCircuito, filterIgreja]);
 
   // LOCAL SECRETARY DASHBOARD
   if (!isAdmin) {
-    const igrejaNome = userIgreja ? (userIgreja as any).nome : "Minha Igreja";
     return (
       <DashboardLayout>
         <div className="p-6 lg:p-8 space-y-6">
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              Bem-vindo, {profile?.nome_completo || "Utilizador"}
+              Seja bem-vindo, {welcomeInfo?.titulo || "Utilizador"}
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Painel do Secretário Local — <strong>{igrejaNome}</strong>
+              {welcomeInfo?.descricao || "Painel Local"}
             </p>
           </div>
 
@@ -168,8 +175,8 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent>
                 <BarSimple data={[
-                  { name: "H (12–17 anos)", value: stats.h },
-                  { name: "I (18–25 anos)", value: stats.i },
+                  { name: "12–17 anos", value: stats.h },
+                  { name: "18–25 anos", value: stats.i },
                 ]} />
               </CardContent>
             </Card>
@@ -203,28 +210,37 @@ const Dashboard = () => {
     );
   }
 
-  // ADMIN DASHBOARD
+  // ADMIN / SUPER ADMIN DASHBOARD
   return (
     <DashboardLayout>
       <div className="p-6 lg:p-8 space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">
-            Bem-vindo, {profile?.nome_completo || "Administrador"}
+            Seja bem-vindo, {welcomeInfo?.titulo || "Administrador"}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Painel Administrativo — Visão geral do sistema
+            {welcomeInfo?.descricao || "Painel Administrativo"}
           </p>
         </div>
 
         {/* Cascading filters */}
         <Card>
           <CardContent className="py-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              {isSuperAdmin && (
+                <Select value={filterDistrito} onValueChange={(v) => { setFilterDistrito(v); setFilterIntendencia(""); setFilterCircuito(""); setFilterIgreja(""); }}>
+                  <SelectTrigger><SelectValue placeholder="Todos os Distritos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {distritos.map((d: any) => (<SelectItem key={d.id} value={d.id}>{d.nome}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              )}
               <Select value={filterIntendencia} onValueChange={(v) => { setFilterIntendencia(v); setFilterCircuito(""); setFilterIgreja(""); }}>
                 <SelectTrigger><SelectValue placeholder="Todas as Intendências" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas</SelectItem>
-                  {intendencias.map((i: any) => (<SelectItem key={i.id} value={i.id}>{i.nome}</SelectItem>))}
+                  {filteredIntendencias.map((i: any) => (<SelectItem key={i.id} value={i.id}>{i.nome}</SelectItem>))}
                 </SelectContent>
               </Select>
               <Select value={filterCircuito} onValueChange={(v) => { setFilterCircuito(v); setFilterIgreja(""); }} disabled={!filterIntendencia || filterIntendencia === "all"}>
@@ -246,10 +262,10 @@ const Dashboard = () => {
         </Card>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Total Activos" value={stats.total} icon={Users} change={`excl. OJA`} changeType="positive" />
+          <StatCard title="Total Activos" value={stats.total} icon={Users} change="excl. OJA" changeType="positive" />
           <StatCard title="Inactivos" value={stats.inactivos} icon={UserMinus} change="jovens" changeType={stats.inactivos > 0 ? "negative" : "positive"} />
           <StatCard title="Masculino / Feminino" value={`${stats.masculino} / ${stats.feminino}`} icon={TrendingUp} change="distribuição" changeType="neutral" />
-          <StatCard title="Faixa Etária" value={`H:${stats.h} / I:${stats.i}`} icon={BarChart3} change="12-17 / 18-25" changeType="neutral" />
+          <StatCard title="Faixa Etária" value={`${stats.h} / ${stats.i}`} icon={BarChart3} change="12-17 / 18-25" changeType="neutral" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

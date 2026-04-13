@@ -12,6 +12,8 @@ import Estruturas from "./pages/Estruturas";
 import Utilizadores from "./pages/Utilizadores";
 import Estatisticas from "./pages/Estatisticas";
 import Configuracoes from "./pages/Configuracoes";
+import PublicDashboard from "./pages/PublicDashboard";
+import PublicEstatisticas from "./pages/PublicEstatisticas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,10 +29,13 @@ const App = () => (
             <Route path="/" element={<Login />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/jovens" element={<ProtectedRoute><Jovens /></ProtectedRoute>} />
-            <Route path="/estruturas" element={<ProtectedRoute><Estruturas /></ProtectedRoute>} />
+            <Route path="/estruturas" element={<ProtectedRoute adminOnly><Estruturas /></ProtectedRoute>} />
             <Route path="/utilizadores" element={<ProtectedRoute adminOnly><Utilizadores /></ProtectedRoute>} />
             <Route path="/estatisticas" element={<ProtectedRoute><Estatisticas /></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
+            {/* Public routes - no login required */}
+            <Route path="/publico/dashboard" element={<PublicDashboard />} />
+            <Route path="/publico/estatisticas" element={<PublicEstatisticas />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
