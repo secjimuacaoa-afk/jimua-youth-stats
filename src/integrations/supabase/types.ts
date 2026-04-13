@@ -43,6 +43,24 @@ export type Database = {
           },
         ]
       }
+      distritos: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       igrejas: {
         Row: {
           circuito_id: string
@@ -75,29 +93,42 @@ export type Database = {
       intendencias: {
         Row: {
           created_at: string
+          distrito_id: string | null
           id: string
           nome: string
         }
         Insert: {
           created_at?: string
+          distrito_id?: string | null
           id?: string
           nome: string
         }
         Update: {
           created_at?: string
+          distrito_id?: string | null
           id?: string
           nome?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "intendencias_distrito_id_fkey"
+            columns: ["distrito_id"]
+            isOneToOne: false
+            referencedRelation: "distritos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       jovens: {
         Row: {
           activo: boolean
+          ano_semestre: number
           categoria: string
           created_at: string
           created_by: string | null
           data_nascimento: string
           documentacao: string[] | null
+          documento_url: string | null
           escolaridade: string | null
           estado_civil: string | null
           id: string
@@ -107,16 +138,19 @@ export type Database = {
           nome: string
           ocupacao: string | null
           origem: string | null
+          semestre: number
           sexo: Database["public"]["Enums"]["sexo_tipo"]
           updated_at: string
         }
         Insert: {
           activo?: boolean
+          ano_semestre?: number
           categoria: string
           created_at?: string
           created_by?: string | null
           data_nascimento: string
           documentacao?: string[] | null
+          documento_url?: string | null
           escolaridade?: string | null
           estado_civil?: string | null
           id?: string
@@ -126,16 +160,19 @@ export type Database = {
           nome: string
           ocupacao?: string | null
           origem?: string | null
+          semestre?: number
           sexo: Database["public"]["Enums"]["sexo_tipo"]
           updated_at?: string
         }
         Update: {
           activo?: boolean
+          ano_semestre?: number
           categoria?: string
           created_at?: string
           created_by?: string | null
           data_nascimento?: string
           documentacao?: string[] | null
+          documento_url?: string | null
           escolaridade?: string | null
           estado_civil?: string | null
           id?: string
@@ -145,6 +182,7 @@ export type Database = {
           nome?: string
           ocupacao?: string | null
           origem?: string | null
+          semestre?: number
           sexo?: Database["public"]["Enums"]["sexo_tipo"]
           updated_at?: string
         }
@@ -258,21 +296,31 @@ export type Database = {
       }
       user_estruturas: {
         Row: {
+          distrito_id: string | null
           id: string
           igreja_id: string | null
           user_id: string
         }
         Insert: {
+          distrito_id?: string | null
           id?: string
           igreja_id?: string | null
           user_id: string
         }
         Update: {
+          distrito_id?: string | null
           id?: string
           igreja_id?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_estruturas_distrito_id_fkey"
+            columns: ["distrito_id"]
+            isOneToOne: false
+            referencedRelation: "distritos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_estruturas_igreja_id_fkey"
             columns: ["igreja_id"]
