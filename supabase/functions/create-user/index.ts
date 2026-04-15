@@ -79,6 +79,13 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (tipo === "local" && isSuperAdmin) {
+      return new Response(JSON.stringify({ error: "O Secretário Geral não pode criar Secretários Locais directamente" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (tipo === "local" && !estrutura_id) {
       return new Response(JSON.stringify({ error: "Utilizador local deve ter uma igreja associada" }), {
         status: 400,

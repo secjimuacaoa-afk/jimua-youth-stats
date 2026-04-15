@@ -78,7 +78,6 @@ const Utilizadores = () => {
   const allowedTypes = useMemo(() => {
     if (isSuperAdmin) return [
       { value: "admin", label: "Secretário Distrital" },
-      { value: "local", label: "Secretário Local" },
     ];
     if (isAdmin) return [
       { value: "local", label: "Secretário Local" },
