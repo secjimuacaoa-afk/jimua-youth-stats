@@ -41,7 +41,7 @@ const Utilizadores = () => {
   const { data: igrejas = [] } = useQuery({
     queryKey: ["igrejas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("igrejas").select("*, circuitos(nome, intendencias(nome))").order("nome");
+      const { data, error } = await supabase.from("igrejas").select("*, circuitos(nome, intendencia_id, intendencias(nome, distrito_id))").order("nome");
       if (error) throw error;
       return data;
     },
