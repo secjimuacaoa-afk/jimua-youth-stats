@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, Shield, User, Crown } from "lucide-react";
+import { UserPlus, Shield, User, Crown, KeyRound } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,8 +22,11 @@ const Utilizadores = () => {
   const [tipo, setTipo] = useState("local");
   const [igrejaId, setIgrejaId] = useState("");
   const [distritoId, setDistritoId] = useState("");
+  const [resetTarget, setResetTarget] = useState<{ id: string; nome: string } | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetConfirm, setResetConfirm] = useState("");
   const { toast } = useToast();
-  const { session, isSuperAdmin, isAdmin } = useAuth();
+  const { session, user: authUser, isSuperAdmin, isAdmin, userDistrito } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: profiles = [], isLoading } = useQuery({
@@ -38,7 +41,7 @@ const Utilizadores = () => {
   const { data: igrejas = [] } = useQuery({
     queryKey: ["igrejas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("igrejas").select("*, circuitos(nome, intendencias(nome))").order("nome");
+      const { data, error } = await supabase.from("igrejas").select("*, circuitos(nome, intendencia_id, intendencias(nome, distrito_id))").order("nome");
       if (error) throw error;
       return data;
     },
@@ -107,10 +110,54 @@ const Utilizadores = () => {
     },
   });
 
+  const resetPasswordMutation = useMutation({
+    mutationFn: async () => {
+      if (!resetTarget) throw new Error("Sem alvo");
+      if (resetPassword.length < 6) throw new Error("A senha deve ter pelo menos 6 caracteres");
+      if (resetPassword !== resetConfirm) throw new Error("As senhas não coincidem");
+      const { data, error } = await supabase.functions.invoke("reset-user-password", {
+        body: { user_id: resetTarget.id, new_password: resetPassword },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      toast({ title: "Senha redefinida", description: "Comunique a nova senha ao utilizador." });
+      setResetTarget(null); setResetPassword(""); setResetConfirm("");
+    },
+    onError: (err: Error) => {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    },
+  });
+
   const getIgreja = (userId: string) => {
     const ue = userEstruturas.find((u: any) => u.user_id === userId);
     if (!ue || !ue.igrejas) return "—";
     return (ue.igrejas as any).nome;
+  };
+
+  const igrejaDistritoMap = useMemo(() => {
+    const map = new Map<string, string>();
+    igrejas.forEach((i: any) => {
+      const did = i.circuitos?.intendencias?.distrito_id;
+      if (did) map.set(i.id, did);
+    });
+    return map;
+  }, [igrejas]);
+
+  const canResetPasswordFor = (target: any): boolean => {
+    if (!target || target.id === authUser?.id) return false;
+    if (target.tipo === "super_admin") return false;
+    if (isSuperAdmin) return target.tipo === "admin" || target.tipo === "local";
+    if (isAdmin) {
+      if (target.tipo !== "local") return false;
+      const ue = userEstruturas.find((u: any) => u.user_id === target.id);
+      const igrejaId = ue?.igreja_id;
+      if (!igrejaId || !userDistrito) return false;
+      return igrejaDistritoMap.get(igrejaId) === userDistrito;
+    }
+    return false;
   };
 
   const getTypeIcon = (tipo: string) => {
@@ -226,13 +273,14 @@ const Utilizadores = () => {
                     <TableHead>Tipo</TableHead>
                     <TableHead>Igreja</TableHead>
                     <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Acções</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
-                    <TableRow><TableCell colSpan={4} className="text-center py-8">Carregando...</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="text-center py-8">Carregando...</TableCell></TableRow>
                   ) : profiles.length === 0 ? (
-                    <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Nenhum utilizador</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nenhum utilizador</TableCell></TableRow>
                   ) : (
                     profiles.map((u: any) => (
                       <TableRow key={u.id}>
@@ -249,6 +297,18 @@ const Utilizadores = () => {
                             {u.activo ? "Activo" : "Inactivo"}
                           </Badge>
                         </TableCell>
+                        <TableCell className="text-right">
+                          {canResetPasswordFor(u) && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => { setResetTarget({ id: u.id, nome: u.nome_completo }); setResetPassword(""); setResetConfirm(""); }}
+                            >
+                              <KeyRound size={14} className="mr-1" />
+                              Redefinir senha
+                            </Button>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -257,6 +317,40 @@ const Utilizadores = () => {
             </div>
           </CardContent>
         </Card>
+
+        <Dialog open={!!resetTarget} onOpenChange={(open) => { if (!open) { setResetTarget(null); setResetPassword(""); setResetConfirm(""); } }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Redefinir Senha</DialogTitle>
+            </DialogHeader>
+            <form
+              className="space-y-4 mt-2"
+              onSubmit={(e) => { e.preventDefault(); resetPasswordMutation.mutate(); }}
+            >
+              <div className="space-y-2">
+                <Label>Utilizador</Label>
+                <Input value={resetTarget?.nome || ""} readOnly className="opacity-70" />
+              </div>
+              <div className="space-y-2">
+                <Label>Nova Senha *</Label>
+                <Input type="password" minLength={6} value={resetPassword} onChange={(e) => setResetPassword(e.target.value)} required placeholder="Mínimo 6 caracteres" />
+              </div>
+              <div className="space-y-2">
+                <Label>Confirmar Senha *</Label>
+                <Input type="password" minLength={6} value={resetConfirm} onChange={(e) => setResetConfirm(e.target.value)} required />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                A nova senha será definida imediatamente. Comunique-a ao utilizador por um canal seguro.
+              </p>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button type="button" variant="outline" onClick={() => setResetTarget(null)}>Cancelar</Button>
+                <Button type="submit" className="bg-primary text-primary-foreground" disabled={resetPasswordMutation.isPending}>
+                  {resetPasswordMutation.isPending ? "Redefinindo..." : "Redefinir"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
