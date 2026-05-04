@@ -110,10 +110,54 @@ const Utilizadores = () => {
     },
   });
 
+  const resetPasswordMutation = useMutation({
+    mutationFn: async () => {
+      if (!resetTarget) throw new Error("Sem alvo");
+      if (resetPassword.length < 6) throw new Error("A senha deve ter pelo menos 6 caracteres");
+      if (resetPassword !== resetConfirm) throw new Error("As senhas não coincidem");
+      const { data, error } = await supabase.functions.invoke("reset-user-password", {
+        body: { user_id: resetTarget.id, new_password: resetPassword },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      toast({ title: "Senha redefinida", description: "Comunique a nova senha ao utilizador." });
+      setResetTarget(null); setResetPassword(""); setResetConfirm("");
+    },
+    onError: (err: Error) => {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    },
+  });
+
   const getIgreja = (userId: string) => {
     const ue = userEstruturas.find((u: any) => u.user_id === userId);
     if (!ue || !ue.igrejas) return "—";
     return (ue.igrejas as any).nome;
+  };
+
+  const igrejaDistritoMap = useMemo(() => {
+    const map = new Map<string, string>();
+    igrejas.forEach((i: any) => {
+      const did = i.circuitos?.intendencias?.distrito_id;
+      if (did) map.set(i.id, did);
+    });
+    return map;
+  }, [igrejas]);
+
+  const canResetPasswordFor = (target: any): boolean => {
+    if (!target || target.id === authUser?.id) return false;
+    if (target.tipo === "super_admin") return false;
+    if (isSuperAdmin) return target.tipo === "admin" || target.tipo === "local";
+    if (isAdmin) {
+      if (target.tipo !== "local") return false;
+      const ue = userEstruturas.find((u: any) => u.user_id === target.id);
+      const igrejaId = ue?.igreja_id;
+      if (!igrejaId || !userDistrito) return false;
+      return igrejaDistritoMap.get(igrejaId) === userDistrito;
+    }
+    return false;
   };
 
   const getTypeIcon = (tipo: string) => {
