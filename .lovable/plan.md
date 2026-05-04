@@ -1,48 +1,71 @@
+# Plano: Redefinição de Senhas pelos Superiores Hierárquicos
 
+## Objectivo
 
-# Plano: Reconfiguração Inicial da Estrutura do Sistema
+Permitir que:
+- **Secretário Geral** redefina senhas de Secretários Distritais e Locais
+- **Secretário Distrital** redefina senhas dos Secretários Locais do seu distrito
 
-## Resumo
-
-Limpar dados estruturais (intendências, circuitos, igrejas, jovens), manter apenas distritos, e restringir Super Admin a criar apenas Secretários Distritais.
+A redefinição é feita por atribuição directa de uma nova senha (não por email), já que muitos utilizadores podem não ter acesso fiável a email.
 
 ---
 
-## 1. Limpeza de Dados (via insert tool — operações DELETE)
+## 1. Nova Edge Function: `reset-user-password`
 
-Eliminar por ordem de dependência:
-1. `jovens` (3 registos) — depende de `igrejas`
-2. `jovens_audit` — depende de `jovens`
-3. `user_estruturas` com `igreja_id` não nulo — associações locais
-4. `igrejas` (4 registos) — depende de `circuitos`
-5. `circuitos` (4 registos) — depende de `intendencias`
-6. `intendencias` (3 registos)
+Ficheiro: `supabase/functions/reset-user-password/index.ts`
 
-Os 13 distritos permanecem intactos.
+Lógica:
+1. Validar JWT do chamador (caller).
+2. Obter `roles` do caller via `user_roles`.
+3. Receber `{ user_id, new_password }` (validar password ≥ 6 chars).
+4. Carregar perfil do alvo (`profiles.tipo`) e estruturas (`user_estruturas`).
+5. Regras de autorização:
+   - `super_admin` → pode redefinir qualquer `admin` ou `local` (nunca outro `super_admin` nem o próprio via esta função).
+   - `admin` (distrital) → só pode redefinir `local` cujo `igreja → circuito → intendencia → distrito` corresponda ao seu `distrito_id` em `user_estruturas`.
+   - `local` → bloqueado (403).
+6. Se autorizado, chamar `adminClient.auth.admin.updateUserById(target_id, { password })`.
+7. Retornar sucesso/erro com `corsHeaders`.
 
-## 2. Restringir Super Admin — Apenas Secretários Distritais
-
-**`src/pages/Utilizadores.tsx`** — remover `"local"` do `allowedTypes` do Super Admin:
-```typescript
-if (isSuperAdmin) return [
-  { value: "admin", label: "Secretário Distrital" },
-];
+Validação de jurisdição distrital (SQL via service role):
+```
+select i.id from igrejas i
+join circuitos c on c.id = i.circuito_id
+join intendencias int on int.id = c.intendencia_id
+where i.id = <igreja_do_alvo> and int.distrito_id = <distrito_do_caller>
 ```
 
-**`supabase/functions/create-user/index.ts`** — adicionar verificação:
-- Se caller é `super_admin` e `tipo === "local"` → rejeitar com erro 403
+## 2. UI — `src/pages/Utilizadores.tsx`
 
-## 3. Ocultar campos irrelevantes no formulário
+- Adicionar coluna "Acções" na tabela.
+- Botão "Redefinir senha" (ícone `KeyRound`) por linha, visível apenas se o caller tem permissão sobre aquele utilizador (mesma lógica do backend, replicada client-side para UX):
+  - Super Admin: botão em todos excepto super_admins e ele próprio.
+  - Admin distrital: botão apenas em locais do seu distrito.
+- Ao clicar abre `Dialog` com:
+  - Nome do utilizador alvo (read-only)
+  - Campo "Nova senha" (mín. 6 caracteres) + campo "Confirmar senha"
+  - Botões Cancelar / Redefinir
+- `useMutation` invoca `supabase.functions.invoke("reset-user-password", { body: { user_id, new_password } })`.
+- Toast de sucesso: "Senha redefinida. Comunique a nova senha ao utilizador."
+- Toast de erro com mensagem do servidor.
 
-No formulário de criação (Super Admin), esconder o campo "Igreja" — já que só cria distritais.
+Para o Admin distrital saber quais utilizadores são "do seu distrito", a query `all-user-estruturas` já traz `distrito_id` e `igreja_id`. Adicionar join com `igrejas → circuitos → intendencias` para mapear igreja→distrito (ou nova query).
+
+## 3. Sem alterações de schema
+
+Nenhuma migração SQL necessária. As permissões são aplicadas inteiramente na Edge Function com service role.
+
+## 4. Segurança
+
+- Senha nunca é logada.
+- Função usa `verify_jwt = false` (padrão Lovable) mas valida JWT em código via `getUser()`.
+- Jurisdição validada server-side — UI é apenas conveniência.
+- `super_admin` não pode redefinir senha de outro `super_admin` nem do próprio (deve usar fluxo normal de "alterar senha" em Configurações).
 
 ---
 
-## Ficheiros a modificar
+## Ficheiros
 
 | Ficheiro | Acção |
 |---|---|
-| Dados BD | DELETE em jovens_audit, jovens, user_estruturas (igreja), igrejas, circuitos, intendencias |
-| `src/pages/Utilizadores.tsx` | Super Admin só cria "admin" |
-| `supabase/functions/create-user/index.ts` | Bloquear super_admin de criar "local" |
-
+| `supabase/functions/reset-user-password/index.ts` | Criar |
+| `src/pages/Utilizadores.tsx` | Adicionar coluna acções + dialog redefinir senha + lógica de visibilidade |
