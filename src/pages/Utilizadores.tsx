@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, Shield, User, Crown } from "lucide-react";
+import { UserPlus, Shield, User, Crown, KeyRound } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,8 +22,11 @@ const Utilizadores = () => {
   const [tipo, setTipo] = useState("local");
   const [igrejaId, setIgrejaId] = useState("");
   const [distritoId, setDistritoId] = useState("");
+  const [resetTarget, setResetTarget] = useState<{ id: string; nome: string } | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetConfirm, setResetConfirm] = useState("");
   const { toast } = useToast();
-  const { session, isSuperAdmin, isAdmin } = useAuth();
+  const { session, user: authUser, isSuperAdmin, isAdmin, userDistrito } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: profiles = [], isLoading } = useQuery({
