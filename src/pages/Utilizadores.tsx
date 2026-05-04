@@ -273,13 +273,14 @@ const Utilizadores = () => {
                     <TableHead>Tipo</TableHead>
                     <TableHead>Igreja</TableHead>
                     <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Acções</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
-                    <TableRow><TableCell colSpan={4} className="text-center py-8">Carregando...</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="text-center py-8">Carregando...</TableCell></TableRow>
                   ) : profiles.length === 0 ? (
-                    <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Nenhum utilizador</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nenhum utilizador</TableCell></TableRow>
                   ) : (
                     profiles.map((u: any) => (
                       <TableRow key={u.id}>
@@ -296,6 +297,18 @@ const Utilizadores = () => {
                             {u.activo ? "Activo" : "Inactivo"}
                           </Badge>
                         </TableCell>
+                        <TableCell className="text-right">
+                          {canResetPasswordFor(u) && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => { setResetTarget({ id: u.id, nome: u.nome_completo }); setResetPassword(""); setResetConfirm(""); }}
+                            >
+                              <KeyRound size={14} className="mr-1" />
+                              Redefinir senha
+                            </Button>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -304,6 +317,40 @@ const Utilizadores = () => {
             </div>
           </CardContent>
         </Card>
+
+        <Dialog open={!!resetTarget} onOpenChange={(open) => { if (!open) { setResetTarget(null); setResetPassword(""); setResetConfirm(""); } }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Redefinir Senha</DialogTitle>
+            </DialogHeader>
+            <form
+              className="space-y-4 mt-2"
+              onSubmit={(e) => { e.preventDefault(); resetPasswordMutation.mutate(); }}
+            >
+              <div className="space-y-2">
+                <Label>Utilizador</Label>
+                <Input value={resetTarget?.nome || ""} readOnly className="opacity-70" />
+              </div>
+              <div className="space-y-2">
+                <Label>Nova Senha *</Label>
+                <Input type="password" minLength={6} value={resetPassword} onChange={(e) => setResetPassword(e.target.value)} required placeholder="Mínimo 6 caracteres" />
+              </div>
+              <div className="space-y-2">
+                <Label>Confirmar Senha *</Label>
+                <Input type="password" minLength={6} value={resetConfirm} onChange={(e) => setResetConfirm(e.target.value)} required />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                A nova senha será definida imediatamente. Comunique-a ao utilizador por um canal seguro.
+              </p>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button type="button" variant="outline" onClick={() => setResetTarget(null)}>Cancelar</Button>
+                <Button type="submit" className="bg-primary text-primary-foreground" disabled={resetPasswordMutation.isPending}>
+                  {resetPasswordMutation.isPending ? "Redefinindo..." : "Redefinir"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
