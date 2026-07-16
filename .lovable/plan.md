@@ -1,71 +1,45 @@
-# Plano: Redefinição de Senhas pelos Superiores Hierárquicos
+## Plano: Teste end-to-end do fluxo do Secretário Local
 
-## Objectivo
+Vou executar um teste automatizado (Playwright) que faz login como Secretário Local e valida o CRUD completo de jovens da sua igreja.
 
-Permitir que:
-- **Secretário Geral** redefina senhas de Secretários Distritais e Locais
-- **Secretário Distrital** redefina senhas dos Secretários Locais do seu distrito
+### Credenciais usadas
+- Email: `secretario@jimua.org`
+- Senha: `Local123456`
+- Igreja associada: Belém (Circuito Rangel)
 
-A redefinição é feita por atribuição directa de uma nova senha (não por email), já que muitos utilizadores podem não ter acesso fiável a email.
+### Cenários a testar
 
----
+1. **Login e restrições de perfil**
+   - Login com sucesso e redireccionamento para `/dashboard`
+   - Confirmar cabeçalho: "Secretário Local — Belém"
+   - Confirmar que abas restritas (Utilizadores, Estruturas nível superior) não aparecem
 
-## 1. Nova Edge Function: `reset-user-password`
+2. **Listagem de jovens (aba Jovens)**
+   - Só mostra jovens da igreja Belém (filtro automático)
+   - Botão "Novo Jovem" visível (ao contrário do admin)
 
-Ficheiro: `supabase/functions/reset-user-password/index.ts`
+3. **Criar novo jovem**
+   - Preencher: nome, sexo, data de nascimento (idade 12–25), categoria, escolaridade, ocupação, estado civil, origem, documentação (multi-select), semestre/ano
+   - Validar cálculo automático de parte etária (12–17 vs 18–25) e flag OJA (>25)
+   - Submeter e confirmar aparição na lista
 
-Lógica:
-1. Validar JWT do chamador (caller).
-2. Obter `roles` do caller via `user_roles`.
-3. Receber `{ user_id, new_password }` (validar password ≥ 6 chars).
-4. Carregar perfil do alvo (`profiles.tipo`) e estruturas (`user_estruturas`).
-5. Regras de autorização:
-   - `super_admin` → pode redefinir qualquer `admin` ou `local` (nunca outro `super_admin` nem o próprio via esta função).
-   - `admin` (distrital) → só pode redefinir `local` cujo `igreja → circuito → intendencia → distrito` corresponda ao seu `distrito_id` em `user_estruturas`.
-   - `local` → bloqueado (403).
-6. Se autorizado, chamar `adminClient.auth.admin.updateUserById(target_id, { password })`.
-7. Retornar sucesso/erro com `corsHeaders`.
+4. **Editar jovem**
+   - Abrir jovem criado, alterar categoria (ex.: J→K), gravar
+   - Verificar que registo de auditoria foi criado em `jovens_audit`
 
-Validação de jurisdição distrital (SQL via service role):
-```
-select i.id from igrejas i
-join circuitos c on c.id = i.circuito_id
-join intendencias int on int.id = c.intendencia_id
-where i.id = <igreja_do_alvo> and int.distrito_id = <distrito_do_caller>
-```
+5. **Inactivar jovem**
+   - Marcar como inactivo com motivo (ex.: "E — Estudo/Trabalho")
+   - Confirmar que aparece filtrado como inactivo
 
-## 2. UI — `src/pages/Utilizadores.tsx`
+6. **Validações de negócio**
+   - Tentar criar jovem sem documentação → deve falhar
+   - Tentar criar jovem com data de nascimento inválida
+   - Confirmar que não vê jovens de outras igrejas (RLS)
 
-- Adicionar coluna "Acções" na tabela.
-- Botão "Redefinir senha" (ícone `KeyRound`) por linha, visível apenas se o caller tem permissão sobre aquele utilizador (mesma lógica do backend, replicada client-side para UX):
-  - Super Admin: botão em todos excepto super_admins e ele próprio.
-  - Admin distrital: botão apenas em locais do seu distrito.
-- Ao clicar abre `Dialog` com:
-  - Nome do utilizador alvo (read-only)
-  - Campo "Nova senha" (mín. 6 caracteres) + campo "Confirmar senha"
-  - Botões Cancelar / Redefinir
-- `useMutation` invoca `supabase.functions.invoke("reset-user-password", { body: { user_id, new_password } })`.
-- Toast de sucesso: "Senha redefinida. Comunique a nova senha ao utilizador."
-- Toast de erro com mensagem do servidor.
+### Entregável
+Screenshots por passo em `/tmp/browser/local-flow/screenshots/` + relatório com:
+- ✅ / ❌ por cenário
+- Erros de consola ou network (se houver)
+- Query final ao Supabase confirmando o jovem criado e o registo de auditoria
 
-Para o Admin distrital saber quais utilizadores são "do seu distrito", a query `all-user-estruturas` já traz `distrito_id` e `igreja_id`. Adicionar join com `igrejas → circuitos → intendencias` para mapear igreja→distrito (ou nova query).
-
-## 3. Sem alterações de schema
-
-Nenhuma migração SQL necessária. As permissões são aplicadas inteiramente na Edge Function com service role.
-
-## 4. Segurança
-
-- Senha nunca é logada.
-- Função usa `verify_jwt = false` (padrão Lovable) mas valida JWT em código via `getUser()`.
-- Jurisdição validada server-side — UI é apenas conveniência.
-- `super_admin` não pode redefinir senha de outro `super_admin` nem do próprio (deve usar fluxo normal de "alterar senha" em Configurações).
-
----
-
-## Ficheiros
-
-| Ficheiro | Acção |
-|---|---|
-| `supabase/functions/reset-user-password/index.ts` | Criar |
-| `src/pages/Utilizadores.tsx` | Adicionar coluna acções + dialog redefinir senha + lógica de visibilidade |
+Se algum passo falhar, reporto o bug com evidência antes de propor correcção (não corrijo nesta iteração — só teste).
