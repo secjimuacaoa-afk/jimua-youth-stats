@@ -360,6 +360,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      public_dashboard_stats: { Args: never; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "local" | "super_admin"
