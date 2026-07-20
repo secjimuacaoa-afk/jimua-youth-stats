@@ -1,13 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, Users, UserMinus } from "lucide-react";
+import { Users, UserMinus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
 import { CATEGORIA_LABELS, getLabel } from "@/lib/labels";
 import logoJimua from "@/assets/logo-jimua.png";
 import { Link } from "react-router-dom";
-
-const calcAge = (dob: string) => Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
 
 const BarSimple = ({ data }: { data: { name: string; value: number }[] }) => {
   const max = Math.max(...data.map((d) => d.value), 1);
@@ -29,36 +26,18 @@ const BarSimple = ({ data }: { data: { name: string; value: number }[] }) => {
 };
 
 const PublicDashboard = () => {
-  const { data: jovens = [] } = useQuery({
-    queryKey: ["public-jovens"],
+  const { data } = useQuery({
+    queryKey: ["public-dashboard-stats"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("jovens").select("sexo, activo, data_nascimento, categoria, is_oja, igreja_id, igrejas(nome)");
+      const { data, error } = await supabase.rpc("public_dashboard_stats");
       if (error) throw error;
-      return data;
+      return data as any;
     },
   });
 
-  const stats = useMemo(() => {
-    const filtered = jovens.filter((j: any) => !j.is_oja);
-    const activos = filtered.filter((j: any) => j.activo);
-    const total = activos.length;
-    const masculino = activos.filter((j: any) => j.sexo === "masculino").length;
-    const feminino = activos.filter((j: any) => j.sexo === "feminino").length;
-    const h = activos.filter((j: any) => { const a = calcAge(j.data_nascimento); return a >= 12 && a <= 17; }).length;
-
-    const byChurch: Record<string, number> = {};
-    activos.forEach((j: any) => {
-      const name = (j.igrejas as any)?.nome || "Sem igreja";
-      byChurch[name] = (byChurch[name] || 0) + 1;
-    });
-    const churchCounts = Object.entries(byChurch).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([name, value]) => ({ name, value }));
-
-    const catCounts: Record<string, number> = {};
-    activos.forEach((j: any) => { if (j.categoria) catCounts[j.categoria] = (catCounts[j.categoria] || 0) + 1; });
-    const categorias = Object.entries(catCounts).map(([code, value]) => ({ name: getLabel(CATEGORIA_LABELS, code), value }));
-
-    return { total, inactivos: filtered.filter((j: any) => !j.activo).length, masculino, feminino, h, i: total - h, churchCounts, categorias };
-  }, [jovens]);
+  const s = data || {};
+  const categorias = (s.categoria || []).map((x: any) => ({ name: getLabel(CATEGORIA_LABELS, x.name), value: x.value }));
+  const churchCounts = s.igrejas_top || [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -74,53 +53,41 @@ const PublicDashboard = () => {
         <p className="text-sm text-muted-foreground">Dados agregados da juventude — sem informações individuais</p>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <Users size={24} className="mx-auto text-primary mb-2" />
-              <p className="text-2xl font-bold">{stats.total}</p>
-              <p className="text-xs text-muted-foreground">Total Activos</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <UserMinus size={24} className="mx-auto text-destructive mb-2" />
-              <p className="text-2xl font-bold">{stats.inactivos}</p>
-              <p className="text-xs text-muted-foreground">Inactivos</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <p className="text-2xl font-bold">{stats.masculino}</p>
-              <p className="text-xs text-muted-foreground">Masculino</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <p className="text-2xl font-bold">{stats.feminino}</p>
-              <p className="text-xs text-muted-foreground">Feminino</p>
-            </CardContent>
-          </Card>
+          <Card><CardContent className="pt-6 text-center">
+            <Users size={24} className="mx-auto text-primary mb-2" />
+            <p className="text-2xl font-bold">{s.total ?? 0}</p>
+            <p className="text-xs text-muted-foreground">Total Activos</p>
+          </CardContent></Card>
+          <Card><CardContent className="pt-6 text-center">
+            <UserMinus size={24} className="mx-auto text-destructive mb-2" />
+            <p className="text-2xl font-bold">{s.inactivos ?? 0}</p>
+            <p className="text-xs text-muted-foreground">Inactivos</p>
+          </CardContent></Card>
+          <Card><CardContent className="pt-6 text-center">
+            <p className="text-2xl font-bold">{s.masculino ?? 0}</p>
+            <p className="text-xs text-muted-foreground">Masculino</p>
+          </CardContent></Card>
+          <Card><CardContent className="pt-6 text-center">
+            <p className="text-2xl font-bold">{s.feminino ?? 0}</p>
+            <p className="text-xs text-muted-foreground">Feminino</p>
+          </CardContent></Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-base">Faixa Etária</CardTitle></CardHeader>
             <CardContent>
-              <BarSimple data={[{ name: "12–17 anos", value: stats.h }, { name: "18–25 anos", value: stats.i }]} />
+              <BarSimple data={[{ name: "12–17 anos", value: s.faixa_12_17 ?? 0 }, { name: "18–25 anos", value: s.faixa_18_25 ?? 0 }]} />
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-base">Categoria</CardTitle></CardHeader>
-            <CardContent>
-              <BarSimple data={stats.categorias} />
-            </CardContent>
+            <CardContent><BarSimple data={categorias} /></CardContent>
           </Card>
-          {stats.churchCounts.length > 0 && (
+          {churchCounts.length > 0 && (
             <Card className="lg:col-span-2">
               <CardHeader className="pb-3"><CardTitle className="text-base">Top 10 Igrejas</CardTitle></CardHeader>
-              <CardContent>
-                <BarSimple data={stats.churchCounts} />
-              </CardContent>
+              <CardContent><BarSimple data={churchCounts} /></CardContent>
             </Card>
           )}
         </div>
