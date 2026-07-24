@@ -14,6 +14,101 @@ export type Database = {
   }
   public: {
     Tables: {
+      actividades: {
+        Row: {
+          ano: number
+          created_at: string
+          criado_por: string | null
+          data: string
+          descricao: string | null
+          id: string
+          igreja_id: string
+          local: string | null
+          mes: number
+          semestre: number
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ano: number
+          created_at?: string
+          criado_por?: string | null
+          data: string
+          descricao?: string | null
+          id?: string
+          igreja_id: string
+          local?: string | null
+          mes: number
+          semestre: number
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          ano?: number
+          created_at?: string
+          criado_por?: string | null
+          data?: string
+          descricao?: string | null
+          id?: string
+          igreja_id?: string
+          local?: string | null
+          mes?: number
+          semestre?: number
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actividades_igreja_id_fkey"
+            columns: ["igreja_id"]
+            isOneToOne: false
+            referencedRelation: "igrejas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assembleias: {
+        Row: {
+          ano: number
+          created_at: string
+          data: string
+          estado: string
+          estrutura_id: string | null
+          estrutura_tipo: string
+          id: string
+          observacoes: string | null
+          responsavel_id: string | null
+          semestre: number
+          updated_at: string
+        }
+        Insert: {
+          ano: number
+          created_at?: string
+          data: string
+          estado?: string
+          estrutura_id?: string | null
+          estrutura_tipo: string
+          id?: string
+          observacoes?: string | null
+          responsavel_id?: string | null
+          semestre: number
+          updated_at?: string
+        }
+        Update: {
+          ano?: number
+          created_at?: string
+          data?: string
+          estado?: string
+          estrutura_id?: string | null
+          estrutura_tipo?: string
+          id?: string
+          observacoes?: string | null
+          responsavel_id?: string | null
+          semestre?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       circuitos: {
         Row: {
           created_at: string
@@ -42,6 +137,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      contactos: {
+        Row: {
+          cargo: string
+          created_at: string
+          criado_por: string | null
+          email: string | null
+          estrutura_id: string | null
+          estrutura_tipo: string
+          foto_url: string | null
+          id: string
+          nome: string
+          notas: string | null
+          telefone: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          cargo: string
+          created_at?: string
+          criado_por?: string | null
+          email?: string | null
+          estrutura_id?: string | null
+          estrutura_tipo: string
+          foto_url?: string | null
+          id?: string
+          nome: string
+          notas?: string | null
+          telefone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          cargo?: string
+          created_at?: string
+          criado_por?: string | null
+          email?: string | null
+          estrutura_id?: string | null
+          estrutura_tipo?: string
+          foto_url?: string | null
+          id?: string
+          nome?: string
+          notas?: string | null
+          telefone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
       }
       distritos: {
         Row: {
@@ -123,68 +266,113 @@ export type Database = {
         Row: {
           activo: boolean
           ano_semestre: number
+          bairro: string | null
+          bi_data_emissao: string | null
+          bi_numero: string | null
+          bi_validade: string | null
           categoria: string
           created_at: string
           created_by: string | null
           data_nascimento: string
           documentacao: string[] | null
           documento_url: string | null
+          email: string | null
+          endereco: string | null
           escolaridade: string | null
           estado_civil: string | null
+          foto_url: string | null
           id: string
           igreja_id: string | null
           is_oja: boolean
           motivo_inactividade: string | null
+          municipio: string | null
+          nacionalidade: string | null
+          naturalidade: string | null
+          nif: string | null
           nome: string
           ocupacao: string | null
           origem: string | null
+          profissao: string | null
+          provincia: string | null
           semestre: number
           sexo: Database["public"]["Enums"]["sexo_tipo"]
+          telefone: string | null
           updated_at: string
+          whatsapp: string | null
         }
         Insert: {
           activo?: boolean
           ano_semestre?: number
+          bairro?: string | null
+          bi_data_emissao?: string | null
+          bi_numero?: string | null
+          bi_validade?: string | null
           categoria: string
           created_at?: string
           created_by?: string | null
           data_nascimento: string
           documentacao?: string[] | null
           documento_url?: string | null
+          email?: string | null
+          endereco?: string | null
           escolaridade?: string | null
           estado_civil?: string | null
+          foto_url?: string | null
           id?: string
           igreja_id?: string | null
           is_oja?: boolean
           motivo_inactividade?: string | null
+          municipio?: string | null
+          nacionalidade?: string | null
+          naturalidade?: string | null
+          nif?: string | null
           nome: string
           ocupacao?: string | null
           origem?: string | null
+          profissao?: string | null
+          provincia?: string | null
           semestre?: number
           sexo: Database["public"]["Enums"]["sexo_tipo"]
+          telefone?: string | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Update: {
           activo?: boolean
           ano_semestre?: number
+          bairro?: string | null
+          bi_data_emissao?: string | null
+          bi_numero?: string | null
+          bi_validade?: string | null
           categoria?: string
           created_at?: string
           created_by?: string | null
           data_nascimento?: string
           documentacao?: string[] | null
           documento_url?: string | null
+          email?: string | null
+          endereco?: string | null
           escolaridade?: string | null
           estado_civil?: string | null
+          foto_url?: string | null
           id?: string
           igreja_id?: string | null
           is_oja?: boolean
           motivo_inactividade?: string | null
+          municipio?: string | null
+          nacionalidade?: string | null
+          naturalidade?: string | null
+          nif?: string | null
           nome?: string
           ocupacao?: string | null
           origem?: string | null
+          profissao?: string | null
+          provincia?: string | null
           semestre?: number
           sexo?: Database["public"]["Enums"]["sexo_tipo"]
+          telefone?: string | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Relationships: [
           {
@@ -225,6 +413,101 @@ export type Database = {
           valor_novo?: string | null
         }
         Relationships: []
+      }
+      ocorrencias: {
+        Row: {
+          ano: number
+          created_at: string
+          criado_por: string | null
+          data: string
+          id: string
+          jovem_id: string
+          motivo: string | null
+          observacoes: string | null
+          semestre: number
+          tipo_categoria: string
+          tipo_codigo: string
+          updated_at: string
+        }
+        Insert: {
+          ano: number
+          created_at?: string
+          criado_por?: string | null
+          data?: string
+          id?: string
+          jovem_id: string
+          motivo?: string | null
+          observacoes?: string | null
+          semestre: number
+          tipo_categoria: string
+          tipo_codigo: string
+          updated_at?: string
+        }
+        Update: {
+          ano?: number
+          created_at?: string
+          criado_por?: string | null
+          data?: string
+          id?: string
+          jovem_id?: string
+          motivo?: string | null
+          observacoes?: string | null
+          semestre?: number
+          tipo_categoria?: string
+          tipo_codigo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ocorrencias_jovem_id_fkey"
+            columns: ["jovem_id"]
+            isOneToOne: false
+            referencedRelation: "jovens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presencas: {
+        Row: {
+          actividade_id: string
+          created_at: string
+          estado: string
+          id: string
+          jovem_id: string
+          observacoes: string | null
+        }
+        Insert: {
+          actividade_id: string
+          created_at?: string
+          estado: string
+          id?: string
+          jovem_id: string
+          observacoes?: string | null
+        }
+        Update: {
+          actividade_id?: string
+          created_at?: string
+          estado?: string
+          id?: string
+          jovem_id?: string
+          observacoes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presencas_actividade_id_fkey"
+            columns: ["actividade_id"]
+            isOneToOne: false
+            referencedRelation: "actividades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presencas_jovem_id_fkey"
+            columns: ["jovem_id"]
+            isOneToOne: false
+            referencedRelation: "jovens"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
