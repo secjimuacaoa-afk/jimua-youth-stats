@@ -14,6 +14,12 @@ import Estatisticas from "./pages/Estatisticas";
 import Configuracoes from "./pages/Configuracoes";
 import PublicDashboard from "./pages/PublicDashboard";
 import PublicEstatisticas from "./pages/PublicEstatisticas";
+import Contactos from "./pages/Contactos";
+import Ocorrencias from "./pages/Ocorrencias";
+import Actividades from "./pages/Actividades";
+import Assembleias from "./pages/Assembleias";
+import Frequencia from "./pages/Frequencia";
+import MapaEstatistico from "./pages/MapaEstatistico";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,11 +35,16 @@ const App = () => (
             <Route path="/" element={<Login />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/jovens" element={<ProtectedRoute><Jovens /></ProtectedRoute>} />
+            <Route path="/ocorrencias" element={<ProtectedRoute><Ocorrencias /></ProtectedRoute>} />
+            <Route path="/frequencia" element={<ProtectedRoute><Frequencia /></ProtectedRoute>} />
+            <Route path="/actividades" element={<ProtectedRoute><Actividades /></ProtectedRoute>} />
+            <Route path="/assembleias" element={<ProtectedRoute><Assembleias /></ProtectedRoute>} />
+            <Route path="/mapa-estatistico" element={<ProtectedRoute><MapaEstatistico /></ProtectedRoute>} />
+            <Route path="/contactos" element={<ProtectedRoute><Contactos /></ProtectedRoute>} />
             <Route path="/estruturas" element={<ProtectedRoute adminOnly><Estruturas /></ProtectedRoute>} />
             <Route path="/utilizadores" element={<ProtectedRoute adminOnly><Utilizadores /></ProtectedRoute>} />
             <Route path="/estatisticas" element={<ProtectedRoute><Estatisticas /></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
-            {/* Public routes - no login required */}
             <Route path="/publico/dashboard" element={<PublicDashboard />} />
             <Route path="/publico/estatisticas" element={<PublicEstatisticas />} />
             <Route path="*" element={<NotFound />} />
