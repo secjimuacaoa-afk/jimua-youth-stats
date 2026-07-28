@@ -70,44 +70,76 @@ export type Database = {
       assembleias: {
         Row: {
           ano: number
+          aprovado_em: string | null
+          aprovado_por: string | null
+          assistente: number | null
+          corpo_directivo: number | null
           created_at: string
           data: string
           estado: string
           estrutura_id: string | null
           estrutura_tipo: string
           id: string
+          igreja_id: string | null
+          jovens_base: number | null
           observacoes: string | null
+          representantes_distrito: number | null
+          representantes_gabinete: number | null
           responsavel_id: string | null
           semestre: number
           updated_at: string
         }
         Insert: {
           ano: number
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          assistente?: number | null
+          corpo_directivo?: number | null
           created_at?: string
           data: string
           estado?: string
           estrutura_id?: string | null
           estrutura_tipo: string
           id?: string
+          igreja_id?: string | null
+          jovens_base?: number | null
           observacoes?: string | null
+          representantes_distrito?: number | null
+          representantes_gabinete?: number | null
           responsavel_id?: string | null
           semestre: number
           updated_at?: string
         }
         Update: {
           ano?: number
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          assistente?: number | null
+          corpo_directivo?: number | null
           created_at?: string
           data?: string
           estado?: string
           estrutura_id?: string | null
           estrutura_tipo?: string
           id?: string
+          igreja_id?: string | null
+          jovens_base?: number | null
           observacoes?: string | null
+          representantes_distrito?: number | null
+          representantes_gabinete?: number | null
           responsavel_id?: string | null
           semestre?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "assembleias_igreja_id_fkey"
+            columns: ["igreja_id"]
+            isOneToOne: false
+            referencedRelation: "igrejas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       circuitos: {
         Row: {
@@ -134,6 +166,50 @@ export type Database = {
             columns: ["intendencia_id"]
             isOneToOne: false
             referencedRelation: "intendencias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classes: {
+        Row: {
+          coordenador: string | null
+          created_at: string
+          created_by: string | null
+          guia: string | null
+          id: string
+          igreja_id: string
+          localizacao: string | null
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          coordenador?: string | null
+          created_at?: string
+          created_by?: string | null
+          guia?: string | null
+          id?: string
+          igreja_id: string
+          localizacao?: string | null
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          coordenador?: string | null
+          created_at?: string
+          created_by?: string | null
+          guia?: string | null
+          id?: string
+          igreja_id?: string
+          localizacao?: string | null
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classes_igreja_id_fkey"
+            columns: ["igreja_id"]
+            isOneToOne: false
+            referencedRelation: "igrejas"
             referencedColumns: ["id"]
           },
         ]
@@ -269,8 +345,10 @@ export type Database = {
           bairro: string | null
           bi_data_emissao: string | null
           bi_numero: string | null
+          bi_pendente_ate: string | null
           bi_validade: string | null
           categoria: string
+          classe_id: string | null
           created_at: string
           created_by: string | null
           data_nascimento: string
@@ -306,8 +384,10 @@ export type Database = {
           bairro?: string | null
           bi_data_emissao?: string | null
           bi_numero?: string | null
+          bi_pendente_ate?: string | null
           bi_validade?: string | null
           categoria: string
+          classe_id?: string | null
           created_at?: string
           created_by?: string | null
           data_nascimento: string
@@ -343,8 +423,10 @@ export type Database = {
           bairro?: string | null
           bi_data_emissao?: string | null
           bi_numero?: string | null
+          bi_pendente_ate?: string | null
           bi_validade?: string | null
           categoria?: string
+          classe_id?: string | null
           created_at?: string
           created_by?: string | null
           data_nascimento?: string
@@ -375,6 +457,13 @@ export type Database = {
           whatsapp?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "jovens_classe_id_fkey"
+            columns: ["classe_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "jovens_igreja_id_fkey"
             columns: ["igreja_id"]
@@ -636,12 +725,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assembleia_bloqueia: {
+        Args: { _ano: number; _igreja_id: string; _semestre: number }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      jovens_a_transferir: {
+        Args: never
+        Returns: {
+          data_nascimento: string
+          id: string
+          idade: number
+          igreja_id: string
+          nome: string
+        }[]
       }
       public_dashboard_stats: { Args: never; Returns: Json }
     }

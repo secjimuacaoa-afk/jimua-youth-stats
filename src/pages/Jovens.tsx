@@ -45,6 +45,8 @@ interface JovemFormData {
   semestre: number;
   anoSemestre: number;
   documentoFile: File | null;
+  biNumero: string;
+  classeId: string;
 }
 
 const emptyForm: JovemFormData = {
@@ -52,10 +54,11 @@ const emptyForm: JovemFormData = {
   escolaridade: "", ocupacao: "", estadoCivil: "", origem: "",
   activo: true, motivoInactividade: "", documentacao: [],
   semestre: 1, anoSemestre: currentYear, documentoFile: null,
+  biNumero: "", classeId: "",
 };
 
 const JovemForm = ({
-  form, setForm, onSubmit, isPending, submitLabel, onCancel
+  form, setForm, onSubmit, isPending, submitLabel, onCancel, classes,
 }: {
   form: JovemFormData;
   setForm: (f: JovemFormData) => void;
@@ -63,6 +66,7 @@ const JovemForm = ({
   isPending: boolean;
   submitLabel: string;
   onCancel: () => void;
+  classes: { id: string; nome: string }[];
 }) => {
   const age = form.dataNascimento ? calcAge(form.dataNascimento) : null;
   const isOja = age !== null && age > 25;
@@ -94,6 +98,24 @@ const JovemForm = ({
         <Label>Nome Completo *</Label>
         <Input placeholder="Nome do jovem" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required />
       </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Nº Bilhete de Identidade *</Label>
+          <Input placeholder="Ex.: 001234567LA045" value={form.biNumero} onChange={(e) => setForm({ ...form, biNumero: e.target.value })} required />
+        </div>
+        <div className="space-y-2">
+          <Label>Classe</Label>
+          <Select value={form.classeId || "none"} onValueChange={(v) => setForm({ ...form, classeId: v === "none" ? "" : v })}>
+            <SelectTrigger><SelectValue placeholder="Sem classe" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Sem classe</SelectItem>
+              {classes.map((c) => (<SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -315,6 +337,17 @@ const Jovens = () => {
     },
   });
 
+  const { data: classes = [] } = useQuery({
+    queryKey: ["classes", userEstruturas[0]],
+    queryFn: async () => {
+      const igrejaId = userEstruturas[0];
+      if (!igrejaId) return [];
+      const { data } = await supabase.from("classes" as any).select("id, nome").eq("igreja_id", igrejaId).order("nome");
+      return (data as any[]) || [];
+    },
+    enabled: !isAdmin && !!userEstruturas[0],
+  });
+
   const filteredCircuitos = filterIntendencia ? circuitos.filter((c: any) => c.intendencia_id === filterIntendencia) : [];
   const filteredIgrejas = filterCircuito ? igrejas.filter((i: any) => i.circuito_id === filterCircuito) : [];
 
@@ -354,7 +387,9 @@ const Jovens = () => {
         activo: form.activo, motivo_inactividade: !form.activo ? form.motivoInactividade : null,
         documentacao: form.documentacao, is_oja: age > 25,
         semestre: form.semestre, ano_semestre: form.anoSemestre,
-      }).select("id").single();
+        bi_numero: form.biNumero || null,
+        classe_id: form.classeId || null,
+      } as any).select("id").single();
       if (error) throw error;
       if (form.documentoFile && inserted) {
         const url = await uploadDoc(form.documentoFile, inserted.id);
@@ -369,7 +404,14 @@ const Jovens = () => {
       setForm({ ...emptyForm });
       queryClient.invalidateQueries({ queryKey: ["jovens"] });
     },
-    onError: (err: Error) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => {
+      const msg = /bi_numero|unique/i.test(err.message)
+        ? "Já existe um jovem registado com este BI. Verifique o número."
+        : /bi.*obrigat/i.test(err.message)
+        ? "O Nº do BI é obrigatório para novos registos."
+        : err.message;
+      toast({ title: "Erro", description: msg, variant: "destructive" });
+    },
   });
 
   const updateMutation = useMutation({
@@ -384,6 +426,8 @@ const Jovens = () => {
         motivo_inactividade: !form.activo ? form.motivoInactividade : null,
         documentacao: form.documentacao, is_oja: age > 25,
         semestre: form.semestre, ano_semestre: form.anoSemestre,
+        bi_numero: form.biNumero || null,
+        classe_id: form.classeId || null,
       };
       if (form.documentoFile) {
         const url = await uploadDoc(form.documentoFile, selectedJovem.id);
@@ -428,6 +472,8 @@ const Jovens = () => {
       semestre: jovem.semestre || 1,
       anoSemestre: jovem.ano_semestre || currentYear,
       documentoFile: null,
+      biNumero: jovem.bi_numero || "",
+      classeId: jovem.classe_id || "",
     });
     setEditDialogOpen(true);
   };
@@ -536,6 +582,7 @@ const Jovens = () => {
                   isPending={createMutation.isPending}
                   submitLabel="Registar"
                   onCancel={() => setDialogOpen(false)}
+                  classes={classes as any}
                 />
               </DialogContent>
             </Dialog>
@@ -649,6 +696,7 @@ const Jovens = () => {
             isPending={updateMutation.isPending}
             submitLabel="Guardar"
             onCancel={() => setEditDialogOpen(false)}
+            classes={classes as any}
           />
         </DialogContent>
       </Dialog>

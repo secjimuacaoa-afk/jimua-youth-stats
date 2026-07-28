@@ -8,6 +8,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Jovens from "./pages/Jovens";
+import Classes from "./pages/Classes";
 import Estruturas from "./pages/Estruturas";
 import Utilizadores from "./pages/Utilizadores";
 import Estatisticas from "./pages/Estatisticas";
@@ -35,10 +36,11 @@ const App = () => (
             <Route path="/" element={<Login />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/jovens" element={<ProtectedRoute><Jovens /></ProtectedRoute>} />
-            <Route path="/ocorrencias" element={<ProtectedRoute><Ocorrencias /></ProtectedRoute>} />
-            <Route path="/frequencia" element={<ProtectedRoute><Frequencia /></ProtectedRoute>} />
-            <Route path="/actividades" element={<ProtectedRoute><Actividades /></ProtectedRoute>} />
-            <Route path="/assembleias" element={<ProtectedRoute><Assembleias /></ProtectedRoute>} />
+            <Route path="/classes" element={<ProtectedRoute localOnly><Classes /></ProtectedRoute>} />
+            <Route path="/ocorrencias" element={<ProtectedRoute localOnly><Ocorrencias /></ProtectedRoute>} />
+            <Route path="/frequencia" element={<ProtectedRoute localOnly><Frequencia /></ProtectedRoute>} />
+            <Route path="/actividades" element={<ProtectedRoute localOnly><Actividades /></ProtectedRoute>} />
+            <Route path="/assembleias" element={<ProtectedRoute distritalOnly><Assembleias /></ProtectedRoute>} />
             <Route path="/mapa-estatistico" element={<ProtectedRoute><MapaEstatistico /></ProtectedRoute>} />
             <Route path="/contactos" element={<ProtectedRoute><Contactos /></ProtectedRoute>} />
             <Route path="/estruturas" element={<ProtectedRoute adminOnly><Estruturas /></ProtectedRoute>} />
