@@ -431,6 +431,8 @@ const Jovens = () => {
       semestre: jovem.semestre || 1,
       anoSemestre: jovem.ano_semestre || currentYear,
       documentoFile: null,
+      biNumero: jovem.bi_numero || "",
+      classeId: jovem.classe_id || "",
     });
     setEditDialogOpen(true);
   };
