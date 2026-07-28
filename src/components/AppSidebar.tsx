@@ -1,7 +1,7 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Church, UserCog, BarChart3, Settings, LogOut, ChevronLeft, ChevronRight,
-  Contact2, ArrowLeftRight, CalendarCheck, Activity, ClipboardList, FileSpreadsheet,
+  Contact2, ArrowLeftRight, CalendarCheck, Activity, ClipboardList, FileSpreadsheet, BookOpen,
 } from "lucide-react";
 import { useState } from "react";
 import logoJimua from "@/assets/logo-jimua.png";
@@ -12,15 +12,18 @@ const AppSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, isAdmin, profile } = useAuth();
+  const { signOut, isAdmin, isSuperAdmin, profile } = useAuth();
+  const isLocal = !isAdmin && !isSuperAdmin && profile?.tipo === "local";
+  const isDistrital = profile?.tipo === "admin" || isSuperAdmin;
 
   const links = [
     { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { to: "/jovens", icon: Users, label: "Jovens" },
-    { to: "/ocorrencias", icon: ArrowLeftRight, label: "Ocorrências" },
-    { to: "/frequencia", icon: Activity, label: "Frequência" },
-    { to: "/actividades", icon: ClipboardList, label: "Actividades" },
-    { to: "/assembleias", icon: CalendarCheck, label: "Assembleias" },
+    ...(isLocal ? [{ to: "/classes", icon: BookOpen, label: "Classes" }] : []),
+    ...(isLocal ? [{ to: "/ocorrencias", icon: ArrowLeftRight, label: "Ocorrências" }] : []),
+    ...(isLocal ? [{ to: "/frequencia", icon: Activity, label: "Frequência" }] : []),
+    ...(isLocal ? [{ to: "/actividades", icon: ClipboardList, label: "Actividades" }] : []),
+    ...(isDistrital ? [{ to: "/assembleias", icon: CalendarCheck, label: "Assembleias" }] : []),
     { to: "/mapa-estatistico", icon: FileSpreadsheet, label: "Mapa Estatístico" },
     ...(isAdmin ? [{ to: "/estruturas", icon: Church, label: "Estruturas" }] : []),
     { to: "/contactos", icon: Contact2, label: "Contactos" },

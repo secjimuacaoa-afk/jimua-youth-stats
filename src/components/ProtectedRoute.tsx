@@ -1,8 +1,16 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
-const ProtectedRoute = ({ children, adminOnly = false, superAdminOnly = false }: { children: React.ReactNode; adminOnly?: boolean; superAdminOnly?: boolean }) => {
-  const { user, loading, isAdmin, isSuperAdmin } = useAuth();
+interface Props {
+  children: React.ReactNode;
+  adminOnly?: boolean;
+  superAdminOnly?: boolean;
+  localOnly?: boolean;
+  distritalOnly?: boolean;
+}
+
+const ProtectedRoute = ({ children, adminOnly, superAdminOnly, localOnly, distritalOnly }: Props) => {
+  const { user, loading, isAdmin, isSuperAdmin, profile } = useAuth();
 
   if (loading) {
     return (
@@ -15,6 +23,8 @@ const ProtectedRoute = ({ children, adminOnly = false, superAdminOnly = false }:
   if (!user) return <Navigate to="/" replace />;
   if (superAdminOnly && !isSuperAdmin) return <Navigate to="/dashboard" replace />;
   if (adminOnly && !isAdmin) return <Navigate to="/dashboard" replace />;
+  if (localOnly && (isAdmin || isSuperAdmin || profile?.tipo !== "local")) return <Navigate to="/dashboard" replace />;
+  if (distritalOnly && !(profile?.tipo === "admin" || isSuperAdmin)) return <Navigate to="/dashboard" replace />;
 
   return <>{children}</>;
 };
