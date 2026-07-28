@@ -45,6 +45,8 @@ interface JovemFormData {
   semestre: number;
   anoSemestre: number;
   documentoFile: File | null;
+  biNumero: string;
+  classeId: string;
 }
 
 const emptyForm: JovemFormData = {
@@ -52,6 +54,7 @@ const emptyForm: JovemFormData = {
   escolaridade: "", ocupacao: "", estadoCivil: "", origem: "",
   activo: true, motivoInactividade: "", documentacao: [],
   semestre: 1, anoSemestre: currentYear, documentoFile: null,
+  biNumero: "", classeId: "",
 };
 
 const JovemForm = ({
