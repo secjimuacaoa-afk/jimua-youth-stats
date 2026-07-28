@@ -58,7 +58,7 @@ const emptyForm: JovemFormData = {
 };
 
 const JovemForm = ({
-  form, setForm, onSubmit, isPending, submitLabel, onCancel
+  form, setForm, onSubmit, isPending, submitLabel, onCancel, classes,
 }: {
   form: JovemFormData;
   setForm: (f: JovemFormData) => void;
@@ -66,6 +66,7 @@ const JovemForm = ({
   isPending: boolean;
   submitLabel: string;
   onCancel: () => void;
+  classes: { id: string; nome: string }[];
 }) => {
   const age = form.dataNascimento ? calcAge(form.dataNascimento) : null;
   const isOja = age !== null && age > 25;
@@ -97,6 +98,24 @@ const JovemForm = ({
         <Label>Nome Completo *</Label>
         <Input placeholder="Nome do jovem" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required />
       </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Nº Bilhete de Identidade *</Label>
+          <Input placeholder="Ex.: 001234567LA045" value={form.biNumero} onChange={(e) => setForm({ ...form, biNumero: e.target.value })} required />
+        </div>
+        <div className="space-y-2">
+          <Label>Classe</Label>
+          <Select value={form.classeId || "none"} onValueChange={(v) => setForm({ ...form, classeId: v === "none" ? "" : v })}>
+            <SelectTrigger><SelectValue placeholder="Sem classe" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Sem classe</SelectItem>
+              {classes.map((c) => (<SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
