@@ -337,6 +337,17 @@ const Jovens = () => {
     },
   });
 
+  const { data: classes = [] } = useQuery({
+    queryKey: ["classes", userEstruturas[0]],
+    queryFn: async () => {
+      const igrejaId = userEstruturas[0];
+      if (!igrejaId) return [];
+      const { data } = await supabase.from("classes" as any).select("id, nome").eq("igreja_id", igrejaId).order("nome");
+      return (data as any[]) || [];
+    },
+    enabled: !isAdmin && !!userEstruturas[0],
+  });
+
   const filteredCircuitos = filterIntendencia ? circuitos.filter((c: any) => c.intendencia_id === filterIntendencia) : [];
   const filteredIgrejas = filterCircuito ? igrejas.filter((i: any) => i.circuito_id === filterCircuito) : [];
 
