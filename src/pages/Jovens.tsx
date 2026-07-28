@@ -571,6 +571,7 @@ const Jovens = () => {
                   isPending={createMutation.isPending}
                   submitLabel="Registar"
                   onCancel={() => setDialogOpen(false)}
+                  classes={classes as any}
                 />
               </DialogContent>
             </Dialog>
@@ -684,6 +685,7 @@ const Jovens = () => {
             isPending={updateMutation.isPending}
             submitLabel="Guardar"
             onCancel={() => setEditDialogOpen(false)}
+            classes={classes as any}
           />
         </DialogContent>
       </Dialog>
