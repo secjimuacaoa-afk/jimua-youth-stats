@@ -387,7 +387,9 @@ const Jovens = () => {
         activo: form.activo, motivo_inactividade: !form.activo ? form.motivoInactividade : null,
         documentacao: form.documentacao, is_oja: age > 25,
         semestre: form.semestre, ano_semestre: form.anoSemestre,
-      }).select("id").single();
+        bi_numero: form.biNumero || null,
+        classe_id: form.classeId || null,
+      } as any).select("id").single();
       if (error) throw error;
       if (form.documentoFile && inserted) {
         const url = await uploadDoc(form.documentoFile, inserted.id);
@@ -402,7 +404,14 @@ const Jovens = () => {
       setForm({ ...emptyForm });
       queryClient.invalidateQueries({ queryKey: ["jovens"] });
     },
-    onError: (err: Error) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => {
+      const msg = /bi_numero|unique/i.test(err.message)
+        ? "Já existe um jovem registado com este BI. Verifique o número."
+        : /bi.*obrigat/i.test(err.message)
+        ? "O Nº do BI é obrigatório para novos registos."
+        : err.message;
+      toast({ title: "Erro", description: msg, variant: "destructive" });
+    },
   });
 
   const updateMutation = useMutation({
@@ -417,6 +426,8 @@ const Jovens = () => {
         motivo_inactividade: !form.activo ? form.motivoInactividade : null,
         documentacao: form.documentacao, is_oja: age > 25,
         semestre: form.semestre, ano_semestre: form.anoSemestre,
+        bi_numero: form.biNumero || null,
+        classe_id: form.classeId || null,
       };
       if (form.documentoFile) {
         const url = await uploadDoc(form.documentoFile, selectedJovem.id);
