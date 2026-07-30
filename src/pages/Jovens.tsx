@@ -19,16 +19,17 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   CATEGORIA_LABELS, ESCOLARIDADE_LABELS, OCUPACAO_LABELS, ESTADO_CIVIL_LABELS,
-  ORIGEM_LABELS, MOTIVO_INACTIVIDADE_LABELS, DOC_LABELS, getLabel, getOptions,
+  AREA_FORMACAO_LABELS, ORIGEM_LABELS, MOTIVO_INACTIVIDADE_LABELS, DOC_LABELS, getLabel, getOptions,
 } from "@/lib/labels";
+import { getSemestreCorrente, periodoTexto } from "@/lib/semestre";
 
 const calcAge = (dob: string) => Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-const calcParteEtaria = (dob: string) => { const age = calcAge(dob); return age >= 12 && age <= 17 ? "H" : "I"; };
+const calcParteEtaria = (dob: string) => { const age = calcAge(dob); return age >= 12 && age <= 17 ? "G" : "H"; };
 
 const DOC_TYPES = getOptions(DOC_LABELS);
 const MOTIVOS = getOptions(MOTIVO_INACTIVIDADE_LABELS);
 const currentYear = new Date().getFullYear();
-const YEARS = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+const SEM_CORRENTE = getSemestreCorrente();
 
 interface JovemFormData {
   nome: string;
