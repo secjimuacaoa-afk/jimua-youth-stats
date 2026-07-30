@@ -396,12 +396,13 @@ const Jovens = () => {
       const { data: inserted, error } = await supabase.from("jovens").insert({
         nome: form.nome, sexo: form.sexo as any, data_nascimento: form.dataNascimento,
         categoria: form.categoria, escolaridade: form.escolaridade || null,
+        area_formacao: form.areaFormacao || null,
         ocupacao: form.ocupacao || null, estado_civil: form.estadoCivil || null,
         origem: form.origem || null, igreja_id: igrejaId, created_by: user?.id,
         activo: form.activo, motivo_inactividade: !form.activo ? form.motivoInactividade : null,
         documentacao: form.documentacao, is_oja: age > 25,
-        semestre: form.semestre, ano_semestre: form.anoSemestre,
-        bi_numero: form.biNumero || null,
+        bi_numero: form.semBi ? null : (form.biNumero || null),
+        sem_bi: form.semBi,
         classe_id: form.classeId || null,
       } as any).select("id").single();
       if (error) throw error;
