@@ -202,29 +202,11 @@ const JovemForm = ({
         </Select>
       </div>
 
-      {/* Semestre */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Semestre *</Label>
-          <Select value={String(form.semestre)} onValueChange={(v) => setForm({ ...form, semestre: Number(v) })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">1º Semestre</SelectItem>
-              <SelectItem value="2">2º Semestre</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Ano *</Label>
-          <Select value={String(form.anoSemestre)} onValueChange={(v) => setForm({ ...form, anoSemestre: Number(v) })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {YEARS.map((y) => (
-                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Semestre — automático */}
+      <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+        <span className="text-muted-foreground">Período estatístico (automático): </span>
+        <strong>{form.semestre}º Semestre / {form.anoSemestre}</strong>
+        <span className="text-muted-foreground"> · {periodoTexto(form.semestre, form.anoSemestre)}</span>
       </div>
 
       {/* Documentação checkboxes */}
