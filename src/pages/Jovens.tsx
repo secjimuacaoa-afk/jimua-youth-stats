@@ -105,8 +105,24 @@ const JovemForm = ({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Nº Bilhete de Identidade *</Label>
-          <Input placeholder="Ex.: 001234567LA045" value={form.biNumero} onChange={(e) => setForm({ ...form, biNumero: e.target.value })} required />
+          <Label>Nº Bilhete de Identidade {form.semBi ? "" : "*"}</Label>
+          <Input
+            placeholder={form.semBi ? "Não possui BI" : "Ex.: 001234567LA045"}
+            value={form.semBi ? "" : form.biNumero}
+            onChange={(e) => setForm({ ...form, biNumero: e.target.value })}
+            required={!form.semBi}
+            disabled={form.semBi}
+          />
+          <div className="flex items-center space-x-2 pt-1">
+            <Checkbox
+              id="sem-bi"
+              checked={form.semBi}
+              onCheckedChange={(c) => setForm({ ...form, semBi: !!c, biNumero: c ? "" : form.biNumero })}
+            />
+            <label htmlFor="sem-bi" className="text-sm cursor-pointer">
+              Não possui documento de identificação (BI)
+            </label>
+          </div>
         </div>
         <div className="space-y-2">
           <Label>Classe</Label>
