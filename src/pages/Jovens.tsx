@@ -37,6 +37,7 @@ interface JovemFormData {
   dataNascimento: string;
   categoria: string;
   escolaridade: string;
+  areaFormacao: string;
   ocupacao: string;
   estadoCivil: string;
   origem: string;
@@ -47,16 +48,18 @@ interface JovemFormData {
   anoSemestre: number;
   documentoFile: File | null;
   biNumero: string;
+  semBi: boolean;
   classeId: string;
 }
 
 const emptyForm: JovemFormData = {
   nome: "", sexo: "", dataNascimento: "", categoria: "",
-  escolaridade: "", ocupacao: "", estadoCivil: "", origem: "",
+  escolaridade: "", areaFormacao: "", ocupacao: "", estadoCivil: "", origem: "",
   activo: true, motivoInactividade: "", documentacao: [],
-  semestre: 1, anoSemestre: currentYear, documentoFile: null,
-  biNumero: "", classeId: "",
+  semestre: SEM_CORRENTE.semestre, anoSemestre: SEM_CORRENTE.ano, documentoFile: null,
+  biNumero: "", semBi: false, classeId: "",
 };
+
 
 const JovemForm = ({
   form, setForm, onSubmit, isPending, submitLabel, onCancel, classes,
