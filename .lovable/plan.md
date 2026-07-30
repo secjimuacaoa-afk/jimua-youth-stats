@@ -1,109 +1,72 @@
-# Actualizações estruturais e funcionais
+# Correcções e Ciclo Semestral Completo
 
-## 1. BI obrigatório e único (todos, com prazo)
+Cinco frentes: gestão de contas por hierarquia, jovens sem BI, aprovação única com pedido de desbloqueio, ciclo semestral automático com arrastamento de ocorrências, e Mapa Estatístico alinhado ao modelo anexado.
 
-**BD (migração):**
-- `jovens.bi_numero`: adicionar índice único parcial `UNIQUE (bi_numero) WHERE bi_numero IS NOT NULL` (já permite legados NULL).
-- Novo campo `jovens.bi_pendente_ate DATE` default `2026-12-31` — só para legados sem BI.
-- Trigger `BEFORE INSERT`: exigir `bi_numero NOT NULL` em novos registos.
-- Trigger `BEFORE UPDATE`: se `bi_numero IS NULL` e `now() > bi_pendente_ate`, bloquear qualquer update além do próprio `bi_numero`.
+## 1. Editar contas de secretários
 
-**UI (`Jovens.tsx`):**
-- Formulário: `bi_numero` obrigatório com validação Zod + mensagem "BI já cadastrado" em erro de unicidade.
-- Banner amarelo na lista quando existem jovens sem BI: "N jovens sem BI — regularizar até 31/12/2026".
-- No formulário de edição de legado sem BI: bloquear submit até preencher.
+- O Secretário Distrital passa a poder editar **nome, email e palavra-passe** de qualquer Secretário Local do seu distrito (mandato anual).
+- O Secretário Geral passa a poder editar **nome, email e palavra-passe** de qualquer Secretário Distrital (e Local).
+- Na página Utilizadores, o botão actual "Redefinir senha" é substituído por um botão **"Editar conta"** que abre um formulário com Nome, Email e Nova palavra-passe (opcional).
+- A validação de jurisdição é feita no servidor (não apenas no ecrã): distrital só actua sobre locais do seu distrito; ninguém edita a própria conta por aqui nem contas de nível superior.
 
-## 2. Filtros do módulo Jovens por perfil
+## 2. Jovem sem Bilhete de Identidade
 
-**Super Admin (Geral):** cascata **Distrito → Intendência → Circuito → Igreja → (Semestre/Ano)**. O primeiro select é Distrito.
-**Distrital:** cascata começa em **Intendência → Circuito → Igreja**, restrita ao seu distrito.
-**Local:** filtro principal é **Classe** (novo, ver §5) + Semestre/Ano. Sem hierarquia geográfica.
+- Nova opção no formulário de jovens: **"Não possui documento de identificação (BI)"**.
+- Ao marcar, o campo BI fica desactivado e a obrigatoriedade deixa de se aplicar (na aplicação e na regra do banco de dados).
+- Na lista e nas fichas, esses jovens aparecem com a indicação "Sem BI" em vez de vazio, para se distinguirem de registos incompletos.
+- Registos já existentes mantêm-se; o prazo de regularização continua a valer apenas para quem não marcou a opção.
 
-Implementação em `src/pages/Jovens.tsx`: substituir o bloco `allFiltered` por selects encadeados condicionais em `role`.
+## 3. Aprovação única + pedido de autorização de edição
 
-## 3. Módulos exclusivos do Secretário Local
+- Uma estatística de semestre por igreja só pode ser aprovada **uma vez** (restrição no banco de dados, não só no ecrã).
+- Depois de aprovada, o Secretário Local fica bloqueado, mas ganha um botão **"Solicitar autorização de edição"** com justificação.
+- O pedido chega ao Secretário Distrital como **notificação** (sino no topo, à semelhança das notificações OJA), onde pode **Autorizar** ou **Recusar**.
+- Autorização abre o semestre daquela igreja por um período definido pelo distrital (ex.: 7 dias) ou até ele fechar de novo; findo o prazo, volta a bloquear automaticamente.
+- O Local recebe aviso do resultado do pedido.
 
-Ocultar completamente para Distrital e Geral (rota + sidebar + guard):
-- Ocorrências
-- Frequência
-- Actividades
+## 4. Ciclo semestral e ocorrências
 
-Alterações:
-- `AppSidebar.tsx`: envolver estes items em `{role === 'local' && ...}`.
-- `ProtectedRoute`: nova prop `localOnly` que redireciona não-locais para `/dashboard`.
-- `App.tsx`: aplicar `localOnly` nas 3 rotas.
+- **Semestre automático**: 1.º semestre 01 Jan–30 Jun, 2.º semestre 01 Jul–31 Dez. Ao registar uma ocorrência ou cadastrar um jovem, o ano/semestre é deduzido da data — deixam de ser campos manuais (ficam visíveis apenas como leitura).
+- **Semestre aberto**: cadastrar, editar e eliminar ocorrências. **Semestre fechado**: apenas consulta.
+- **Arrastamento**: o efectivo de um semestre parte do Número Actual do semestre anterior (importado automaticamente ao abrir), e as entradas/saídas registadas aparecem no mapa do semestre seguinte, conforme o modelo.
+- **Fecho do semestre** aplica a fórmula:
+  `Número Actual = Número Anterior + Entradas − Saídas`
+  e congela os valores num registo histórico, para que os mapas antigos não mudem quando os dados actuais mudam.
 
-## 4. Assembleias — exclusivo do Distrital, com aprovação bloqueante
-
-**BD:**
-- `assembleias`: novas colunas `igreja_id UUID`, `jovens_base INT`, `corpo_directivo INT`, `representantes_distrito INT`, `representantes_gabinete INT`, `assistente INT`, `aprovado_em TIMESTAMPTZ`, `aprovado_por UUID`.
-- RLS: só `admin`/`super_admin` (Distrital vê apenas as do seu distrito, via `user_estruturas`).
-- Trigger `enforce_semester_lock`: em `jovens`, `ocorrencias`, `actividades`, `presencas` — se existe `assembleias` com `igreja_id`+`ano`+`semestre` e `estado='aprovado'`, bloquear INSERT/UPDATE/DELETE.
-
-**UI (`Assembleias.tsx`, reescrever):**
-- Só acessível a `admin` e `super_admin`; ocultar da sidebar do Local.
-- Fluxo: seleccionar Igreja → data → contagens de presença → botão "Aprovar estatística" (irreversível → confirmação).
-- Estados: `preparacao` → `aprovado` → `encerrado`.
-
-**UI Local:** quando o semestre está bloqueado, todos os forms de Jovens/Ocorrências/Frequência/Actividades mostram badge "Semestre encerrado — só leitura" e desabilitam submit.
-
-## 5. Classes (nova entidade — perfil Local)
-
-**BD:**
+```text
+Criar/abrir semestre → importar Nº Actual anterior → registar ocorrências
+→ efectivo actualizado automaticamente → dados complementares
+→ fechar semestre → gerar Mapa Estatístico
 ```
-classes (id, igreja_id, nome, guia, localizacao, coordenador)
-```
-- RLS: Local vê/gere só as da sua igreja; Distrital/Geral leitura na sua jurisdição.
-- `jovens.classe_id UUID NULL REFERENCES classes(id)` — cada jovem numa única classe.
 
-**UI:**
-- Nova página `src/pages/Classes.tsx` (só Local) — CRUD com campos: Nome, Guia, Localização, Coordenador.
-- Sidebar: novo item "Classes" só para Local.
-- Formulário de Jovem: novo select "Classe" (obrigatório para Local, opcional para admins).
-- Mapa Estatístico (`MapaEstatistico.tsx`): novo filtro "Classe" no topo.
-- Dashboard do Local: novo card "Ranking de Classes" (BarChart horizontal ordenado por nº de membros activos).
+- Nova página **Semestres** (Local vê o seu; Distrital e Geral vêem os da sua jurisdição) com estado Aberto/Fechado, número anterior, entradas, saídas e número actual calculado em tempo real.
 
-## 6. Alertas e ciclo do semestre
+## 5. Mapa Estatístico conforme o modelo anexado
 
-- Helper `src/lib/semestre.ts`: calcula semestre corrente (1: Jan–Jun, 2: Jul–Dez) e dias até ao fim.
-- Banner global no topo do `DashboardLayout` para Locais quando faltam ≤ 30 dias: "Semestre X/AAAA termina em N dias — submeta o Mapa Estatístico".
-- Cadastro de jovem: `semestre` e `ano_semestre` obrigatórios (defaults = semestre corrente).
-- Botão "Renovar para o próximo semestre" no perfil do jovem (Local): duplica o registo com `semestre+1`/novo ano, mantendo dados e permitindo actualizar `activo`/`motivo_inactividade`. No arranque de cada semestre, lista "Jovens por renovar".
+O mapa passa a reproduzir integralmente o modelo, no ecrã e no PDF, com os mesmos blocos, códigos e totais:
 
-## 7. Transferência automática para OJA aos 26
+- **Nº Anterior** (Real e Físico) por sexo.
+- **Ocorrências**: A, A1, A2, A3 (entradas) e B, B1, B2, B3 (saídas).
+- **Nº Actual (Real)**, **Diferenças** C, D, E, F, **Nº Actual (Físico)**.
+- **Parte Etária**: G (12–17), H (18–25).
+- **Categoria**: I, J, K.
+- **Grau de Escolaridade**: L, L1, L2, M, M1, M2, N.
+- **Área de Formação**: O, P, Q, Q1, Q2, Q3, R, S — bloco **novo**, exige novo campo "Área de Formação" na ficha do jovem (opcional para registos existentes).
+- **Situação Ocupacional**: T, U, U1, U2, U3, U4, V, W, W1.
+- **Estado Civil**: X, Y, Z.
+- Linhas Masc./Fem./Total, linhas de verificação de totais por bloco e o **Índice de Abreviaturas** no rodapé do PDF, com espaço de assinatura "Pelo Secretário".
+- Disponível nos três níveis (Local, Distrital, Geral) com os filtros hierárquicos já existentes.
 
-**BD:** view/RPC `jovens_a_transferir()` — jovens com `is_oja=false`, `activo=true`, idade ≥ 26.
-**UI:** novo sino de notificações no header para Local; badge com contagem. Ao abrir, lista com nome + botão "Transferir para Organização de Jovens Adultos" que faz `UPDATE jovens SET is_oja=true`. Uma vez transferido, sai automaticamente de todas as contagens (o `public_dashboard_stats` e o dashboard interno já filtram `is_oja=false`; confirmar em todos os `count`).
+Nota: os códigos actuais do sistema (categoria J/K/L, escolaridade M–Q, ocupação R–X1, estado civil Y/Z) não coincidem com os do modelo. Os dados já registados serão convertidos para a nova codificação numa migração, sem perda de informação.
 
-## 8. Redesign do Dashboard
+## 6. Acabamento visual
 
-- Paleta distinta por série: usar tokens semânticos `--chart-1..--chart-5` (já disponíveis em `index.css` do shadcn); actualizar `Dashboard.tsx` para atribuir cores diferentes por categoria comparada (barras de "Categoria" com cor por barra, pie de género com cores distintas, etc.).
-- Filtro do Dashboard replica o de Jovens (Distrito/Intendência/… conforme perfil).
-- Adicionar o card "Ranking de Classes" no perfil Local.
-
----
+- Revisão das abas afectadas (Jovens, Ocorrências, Assembleias, Semestres, Mapa) para identidade visual consistente, tabelas legíveis com deslocamento horizontal em ecrã pequeno, estados vazios e de carregamento claros, e responsividade em telemóvel.
 
 ## Detalhes técnicos
 
-**Migrações necessárias (1 migração):**
-1. `ALTER TABLE jovens ADD COLUMN classe_id UUID REFERENCES classes(id)`, `bi_pendente_ate DATE`; índice único parcial em `bi_numero`.
-2. `CREATE TABLE classes` + GRANTs + RLS.
-3. `ALTER TABLE assembleias` — colunas de presença e aprovação.
-4. Trigger `enforce_semester_lock` aplicado a jovens/ocorrencias/actividades/presencas.
-5. Trigger de BI obrigatório em jovens.
-6. RPC `jovens_a_transferir()`.
-
-**Ficheiros a criar:**
-- `src/pages/Classes.tsx`
-- `src/lib/semestre.ts`
-- `src/components/NotificacoesOja.tsx`
-
-**Ficheiros a editar:**
-- `src/pages/Jovens.tsx` (filtros por perfil, BI obrigatório, Classe no form)
-- `src/pages/Dashboard.tsx` (cores, filtros, ranking de classes)
-- `src/pages/Assembleias.tsx` (reescrever fluxo distrital)
-- `src/pages/MapaEstatistico.tsx` (filtro Classe)
-- `src/pages/Ocorrencias.tsx`, `Frequencia.tsx`, `Actividades.tsx` (localOnly + respeitar bloqueio)
-- `src/components/AppSidebar.tsx`, `src/components/ProtectedRoute.tsx`, `src/App.tsx`, `src/components/DashboardLayout.tsx`
-
-**Fora do âmbito** (confirmar depois se querem): notificações por email, exportação do M.E.O já com filtro por classe no PDF (fica só a filtragem em ecrã nesta iteração — posso incluir no PDF se quiser).
+- Banco de dados: `jovens.sem_bi` (booleano) e `jovens.area_formacao`; nova tabela `periodos_estatisticos` (igreja, ano, semestre, estado, números anterior/actual congelados) com RLS por jurisdição; nova tabela `pedidos_desbloqueio` (igreja, período, justificação, estado, prazo); índice único em `assembleias(igreja_id, ano, semestre)` para estado aprovado.
+- Gatilhos: `enforce_bi_obrigatorio` passa a aceitar `sem_bi`; `enforce_semester_lock_*` passa a consultar `periodos_estatisticos` e autorizações activas em vez de apenas assembleia aprovada; novo gatilho preenche ano/semestre a partir da data.
+- Nova função de servidor `update-user` (nome, email, palavra-passe) com verificação de jurisdição; `reset-user-password` é absorvida por ela.
+- Migração de códigos: mapeamento antigo → novo para `categoria`, `escolaridade`, `ocupacao`, `estado_civil`, `origem`, `motivo_inactividade`, com `src/lib/labels.ts` reescrito segundo o índice de abreviaturas do modelo.
+- `src/lib/pdf.ts` ganha o layout de tabela larga em modo paisagem e o bloco de abreviaturas.
