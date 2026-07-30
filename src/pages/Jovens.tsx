@@ -184,6 +184,18 @@ const JovemForm = ({
         </div>
       </div>
 
+      <div className="space-y-2">
+        <Label>Área de Formação</Label>
+        <Select value={form.areaFormacao} onValueChange={(v) => setForm({ ...form, areaFormacao: v })}>
+          <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+          <SelectContent>
+            {getOptions(AREA_FORMACAO_LABELS).map((o) => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Ocupação</Label>
