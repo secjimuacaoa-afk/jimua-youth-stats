@@ -633,7 +633,7 @@ const Jovens = () => {
                   <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
-                    {YEARS.map((y) => (<SelectItem key={y} value={String(y)}>{y}</SelectItem>))}
+                    {Array.from({ length: 5 }, (_, i) => currentYear - 2 + i).map((y) => (<SelectItem key={y} value={String(y)}>{y}</SelectItem>))}
                   </SelectContent>
                 </Select>
               </div>
