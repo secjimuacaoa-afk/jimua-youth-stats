@@ -422,8 +422,8 @@ const Jovens = () => {
     onError: (err: Error) => {
       const msg = /bi_numero|unique/i.test(err.message)
         ? "Já existe um jovem registado com este BI. Verifique o número."
-        : /bi.*obrigat/i.test(err.message)
-        ? "O Nº do BI é obrigatório para novos registos."
+        : /bi.*obrigat|Indique o número do BI/i.test(err.message)
+        ? 'Indique o Nº do BI ou marque "Não possui documento de identificação (BI)".'
         : err.message;
       toast({ title: "Erro", description: msg, variant: "destructive" });
     },
