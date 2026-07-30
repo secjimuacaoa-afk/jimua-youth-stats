@@ -5,7 +5,7 @@ Cinco frentes: gestão de contas por hierarquia, jovens sem BI, aprovação úni
 ## 1. Editar contas de secretários
 
 - O Secretário Distrital passa a poder editar **nome, email e palavra-passe** de qualquer Secretário Local do seu distrito (mandato anual).
-- O Secretário Geral passa a poder editar **nome, email e palavra-passe** de qualquer Secretário Distrital (e Local).
+- O Secretário Geral passa a poder editar **nome, email e palavra-passe** de qualquer Secretário Distrital.
 - Na página Utilizadores, o botão actual "Redefinir senha" é substituído por um botão **"Editar conta"** que abre um formulário com Nome, Email e Nova palavra-passe (opcional).
 - A validação de jurisdição é feita no servidor (não apenas no ecrã): distrital só actua sobre locais do seu distrito; ninguém edita a própria conta por aqui nem contas de nível superior.
 
@@ -30,8 +30,8 @@ Cinco frentes: gestão de contas por hierarquia, jovens sem BI, aprovação úni
 - **Semestre aberto**: cadastrar, editar e eliminar ocorrências. **Semestre fechado**: apenas consulta.
 - **Arrastamento**: o efectivo de um semestre parte do Número Actual do semestre anterior (importado automaticamente ao abrir), e as entradas/saídas registadas aparecem no mapa do semestre seguinte, conforme o modelo.
 - **Fecho do semestre** aplica a fórmula:
-  `Número Actual = Número Anterior + Entradas − Saídas`
-  e congela os valores num registo histórico, para que os mapas antigos não mudem quando os dados actuais mudam.
+`Número Actual = Número Anterior + Entradas − Saídas`
+e congela os valores num registo histórico, para que os mapas antigos não mudem quando os dados actuais mudam.
 
 ```text
 Criar/abrir semestre → importar Nº Actual anterior → registar ocorrências

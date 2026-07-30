@@ -19,16 +19,17 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   CATEGORIA_LABELS, ESCOLARIDADE_LABELS, OCUPACAO_LABELS, ESTADO_CIVIL_LABELS,
-  ORIGEM_LABELS, MOTIVO_INACTIVIDADE_LABELS, DOC_LABELS, getLabel, getOptions,
+  AREA_FORMACAO_LABELS, ORIGEM_LABELS, MOTIVO_INACTIVIDADE_LABELS, DOC_LABELS, getLabel, getOptions,
 } from "@/lib/labels";
+import { getSemestreCorrente, periodoTexto } from "@/lib/semestre";
 
 const calcAge = (dob: string) => Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-const calcParteEtaria = (dob: string) => { const age = calcAge(dob); return age >= 12 && age <= 17 ? "H" : "I"; };
+const calcParteEtaria = (dob: string) => { const age = calcAge(dob); return age >= 12 && age <= 17 ? "G" : "H"; };
 
 const DOC_TYPES = getOptions(DOC_LABELS);
 const MOTIVOS = getOptions(MOTIVO_INACTIVIDADE_LABELS);
 const currentYear = new Date().getFullYear();
-const YEARS = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+const SEM_CORRENTE = getSemestreCorrente();
 
 interface JovemFormData {
   nome: string;
@@ -36,6 +37,7 @@ interface JovemFormData {
   dataNascimento: string;
   categoria: string;
   escolaridade: string;
+  areaFormacao: string;
   ocupacao: string;
   estadoCivil: string;
   origem: string;
@@ -46,16 +48,18 @@ interface JovemFormData {
   anoSemestre: number;
   documentoFile: File | null;
   biNumero: string;
+  semBi: boolean;
   classeId: string;
 }
 
 const emptyForm: JovemFormData = {
   nome: "", sexo: "", dataNascimento: "", categoria: "",
-  escolaridade: "", ocupacao: "", estadoCivil: "", origem: "",
+  escolaridade: "", areaFormacao: "", ocupacao: "", estadoCivil: "", origem: "",
   activo: true, motivoInactividade: "", documentacao: [],
-  semestre: 1, anoSemestre: currentYear, documentoFile: null,
-  biNumero: "", classeId: "",
+  semestre: SEM_CORRENTE.semestre, anoSemestre: SEM_CORRENTE.ano, documentoFile: null,
+  biNumero: "", semBi: false, classeId: "",
 };
+
 
 const JovemForm = ({
   form, setForm, onSubmit, isPending, submitLabel, onCancel, classes,
@@ -101,8 +105,24 @@ const JovemForm = ({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Nº Bilhete de Identidade *</Label>
-          <Input placeholder="Ex.: 001234567LA045" value={form.biNumero} onChange={(e) => setForm({ ...form, biNumero: e.target.value })} required />
+          <Label>Nº Bilhete de Identidade {form.semBi ? "" : "*"}</Label>
+          <Input
+            placeholder={form.semBi ? "Não possui BI" : "Ex.: 001234567LA045"}
+            value={form.semBi ? "" : form.biNumero}
+            onChange={(e) => setForm({ ...form, biNumero: e.target.value })}
+            required={!form.semBi}
+            disabled={form.semBi}
+          />
+          <div className="flex items-center space-x-2 pt-1">
+            <Checkbox
+              id="sem-bi"
+              checked={form.semBi}
+              onCheckedChange={(c) => setForm({ ...form, semBi: !!c, biNumero: c ? "" : form.biNumero })}
+            />
+            <label htmlFor="sem-bi" className="text-sm cursor-pointer">
+              Não possui documento de identificação (BI)
+            </label>
+          </div>
         </div>
         <div className="space-y-2">
           <Label>Classe</Label>
@@ -164,6 +184,18 @@ const JovemForm = ({
         </div>
       </div>
 
+      <div className="space-y-2">
+        <Label>Área de Formação</Label>
+        <Select value={form.areaFormacao} onValueChange={(v) => setForm({ ...form, areaFormacao: v })}>
+          <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+          <SelectContent>
+            {getOptions(AREA_FORMACAO_LABELS).map((o) => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Ocupação</Label>
@@ -201,29 +233,11 @@ const JovemForm = ({
         </Select>
       </div>
 
-      {/* Semestre */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Semestre *</Label>
-          <Select value={String(form.semestre)} onValueChange={(v) => setForm({ ...form, semestre: Number(v) })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">1º Semestre</SelectItem>
-              <SelectItem value="2">2º Semestre</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Ano *</Label>
-          <Select value={String(form.anoSemestre)} onValueChange={(v) => setForm({ ...form, anoSemestre: Number(v) })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {YEARS.map((y) => (
-                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Semestre — automático */}
+      <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+        <span className="text-muted-foreground">Período estatístico (automático): </span>
+        <strong>{form.semestre}º Semestre / {form.anoSemestre}</strong>
+        <span className="text-muted-foreground"> · {periodoTexto(form.semestre, form.anoSemestre)}</span>
       </div>
 
       {/* Documentação checkboxes */}
@@ -382,12 +396,13 @@ const Jovens = () => {
       const { data: inserted, error } = await supabase.from("jovens").insert({
         nome: form.nome, sexo: form.sexo as any, data_nascimento: form.dataNascimento,
         categoria: form.categoria, escolaridade: form.escolaridade || null,
+        area_formacao: form.areaFormacao || null,
         ocupacao: form.ocupacao || null, estado_civil: form.estadoCivil || null,
         origem: form.origem || null, igreja_id: igrejaId, created_by: user?.id,
         activo: form.activo, motivo_inactividade: !form.activo ? form.motivoInactividade : null,
         documentacao: form.documentacao, is_oja: age > 25,
-        semestre: form.semestre, ano_semestre: form.anoSemestre,
-        bi_numero: form.biNumero || null,
+        bi_numero: form.semBi ? null : (form.biNumero || null),
+        sem_bi: form.semBi,
         classe_id: form.classeId || null,
       } as any).select("id").single();
       if (error) throw error;
@@ -407,8 +422,8 @@ const Jovens = () => {
     onError: (err: Error) => {
       const msg = /bi_numero|unique/i.test(err.message)
         ? "Já existe um jovem registado com este BI. Verifique o número."
-        : /bi.*obrigat/i.test(err.message)
-        ? "O Nº do BI é obrigatório para novos registos."
+        : /bi.*obrigat|Indique o número do BI/i.test(err.message)
+        ? 'Indique o Nº do BI ou marque "Não possui documento de identificação (BI)".'
         : err.message;
       toast({ title: "Erro", description: msg, variant: "destructive" });
     },
@@ -421,12 +436,13 @@ const Jovens = () => {
       const updates: any = {
         nome: form.nome, sexo: form.sexo as any, data_nascimento: form.dataNascimento,
         categoria: form.categoria, escolaridade: form.escolaridade || null,
+        area_formacao: form.areaFormacao || null,
         ocupacao: form.ocupacao || null, estado_civil: form.estadoCivil || null,
         origem: form.origem || null, activo: form.activo,
         motivo_inactividade: !form.activo ? form.motivoInactividade : null,
         documentacao: form.documentacao, is_oja: age > 25,
-        semestre: form.semestre, ano_semestre: form.anoSemestre,
-        bi_numero: form.biNumero || null,
+        bi_numero: form.semBi ? null : (form.biNumero || null),
+        sem_bi: form.semBi,
         classe_id: form.classeId || null,
       };
       if (form.documentoFile) {
@@ -465,14 +481,16 @@ const Jovens = () => {
     setForm({
       nome: jovem.nome, sexo: jovem.sexo, dataNascimento: jovem.data_nascimento,
       categoria: jovem.categoria, escolaridade: jovem.escolaridade || "",
+      areaFormacao: jovem.area_formacao || "",
       ocupacao: jovem.ocupacao || "", estadoCivil: jovem.estado_civil || "",
       origem: jovem.origem || "", activo: jovem.activo,
       motivoInactividade: jovem.motivo_inactividade || "",
       documentacao: jovem.documentacao || [],
-      semestre: jovem.semestre || 1,
+      semestre: jovem.semestre || SEM_CORRENTE.semestre,
       anoSemestre: jovem.ano_semestre || currentYear,
       documentoFile: null,
       biNumero: jovem.bi_numero || "",
+      semBi: !!jovem.sem_bi,
       classeId: jovem.classe_id || "",
     });
     setEditDialogOpen(true);
@@ -522,8 +540,8 @@ const Jovens = () => {
                 <TableCell>{jovem.sexo === "masculino" ? "M" : "F"}</TableCell>
                 <TableCell>{age}</TableCell>
                 <TableCell>
-                  <Badge variant={isOja ? "destructive" : calcParteEtaria(jovem.data_nascimento) === "H" ? "secondary" : "default"}>
-                    {isOja ? "Jovem Adulto" : calcParteEtaria(jovem.data_nascimento) === "H" ? "12–17 anos" : "18–25 anos"}
+                  <Badge variant={isOja ? "destructive" : calcParteEtaria(jovem.data_nascimento) === "G" ? "secondary" : "default"}>
+                    {isOja ? "Jovem Adulto" : calcParteEtaria(jovem.data_nascimento) === "G" ? "12–17 anos" : "18–25 anos"}
                   </Badge>
                 </TableCell>
                 <TableCell>{getLabel(CATEGORIA_LABELS, jovem.categoria)}</TableCell>
@@ -632,7 +650,7 @@ const Jovens = () => {
                   <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
-                    {YEARS.map((y) => (<SelectItem key={y} value={String(y)}>{y}</SelectItem>))}
+                    {Array.from({ length: 5 }, (_, i) => currentYear - 2 + i).map((y) => (<SelectItem key={y} value={String(y)}>{y}</SelectItem>))}
                   </SelectContent>
                 </Select>
               </div>

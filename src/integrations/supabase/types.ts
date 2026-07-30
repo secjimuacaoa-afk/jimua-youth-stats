@@ -342,6 +342,7 @@ export type Database = {
         Row: {
           activo: boolean
           ano_semestre: number
+          area_formacao: string | null
           bairro: string | null
           bi_data_emissao: string | null
           bi_numero: string | null
@@ -372,6 +373,7 @@ export type Database = {
           origem: string | null
           profissao: string | null
           provincia: string | null
+          sem_bi: boolean
           semestre: number
           sexo: Database["public"]["Enums"]["sexo_tipo"]
           telefone: string | null
@@ -381,6 +383,7 @@ export type Database = {
         Insert: {
           activo?: boolean
           ano_semestre?: number
+          area_formacao?: string | null
           bairro?: string | null
           bi_data_emissao?: string | null
           bi_numero?: string | null
@@ -411,6 +414,7 @@ export type Database = {
           origem?: string | null
           profissao?: string | null
           provincia?: string | null
+          sem_bi?: boolean
           semestre?: number
           sexo: Database["public"]["Enums"]["sexo_tipo"]
           telefone?: string | null
@@ -420,6 +424,7 @@ export type Database = {
         Update: {
           activo?: boolean
           ano_semestre?: number
+          area_formacao?: string | null
           bairro?: string | null
           bi_data_emissao?: string | null
           bi_numero?: string | null
@@ -450,6 +455,7 @@ export type Database = {
           origem?: string | null
           profissao?: string | null
           provincia?: string | null
+          sem_bi?: boolean
           semestre?: number
           sexo?: Database["public"]["Enums"]["sexo_tipo"]
           telefone?: string | null
@@ -552,6 +558,130 @@ export type Database = {
             columns: ["jovem_id"]
             isOneToOne: false
             referencedRelation: "jovens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedidos_desbloqueio: {
+        Row: {
+          ano: number
+          autorizado_ate: string | null
+          created_at: string
+          decidido_em: string | null
+          decidido_por: string | null
+          estado: string
+          id: string
+          igreja_id: string
+          justificacao: string
+          resposta: string | null
+          semestre: number
+          solicitado_por: string | null
+          updated_at: string
+        }
+        Insert: {
+          ano: number
+          autorizado_ate?: string | null
+          created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
+          estado?: string
+          id?: string
+          igreja_id: string
+          justificacao: string
+          resposta?: string | null
+          semestre: number
+          solicitado_por?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ano?: number
+          autorizado_ate?: string | null
+          created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
+          estado?: string
+          id?: string
+          igreja_id?: string
+          justificacao?: string
+          resposta?: string | null
+          semestre?: number
+          solicitado_por?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_desbloqueio_igreja_id_fkey"
+            columns: ["igreja_id"]
+            isOneToOne: false
+            referencedRelation: "igrejas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      periodos_estatisticos: {
+        Row: {
+          ano: number
+          created_at: string
+          criado_por: string | null
+          entradas: number | null
+          estado: string
+          fechado_em: string | null
+          fechado_por: string | null
+          id: string
+          igreja_id: string
+          numero_actual_fisico: number | null
+          numero_actual_real: number | null
+          numero_anterior_fisico: number
+          numero_anterior_real: number
+          saidas: number | null
+          semestre: number
+          snapshot: Json | null
+          updated_at: string
+        }
+        Insert: {
+          ano: number
+          created_at?: string
+          criado_por?: string | null
+          entradas?: number | null
+          estado?: string
+          fechado_em?: string | null
+          fechado_por?: string | null
+          id?: string
+          igreja_id: string
+          numero_actual_fisico?: number | null
+          numero_actual_real?: number | null
+          numero_anterior_fisico?: number
+          numero_anterior_real?: number
+          saidas?: number | null
+          semestre: number
+          snapshot?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          ano?: number
+          created_at?: string
+          criado_por?: string | null
+          entradas?: number | null
+          estado?: string
+          fechado_em?: string | null
+          fechado_por?: string | null
+          id?: string
+          igreja_id?: string
+          numero_actual_fisico?: number | null
+          numero_actual_real?: number | null
+          numero_anterior_fisico?: number
+          numero_anterior_real?: number
+          saidas?: number | null
+          semestre?: number
+          snapshot?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "periodos_estatisticos_igreja_id_fkey"
+            columns: ["igreja_id"]
+            isOneToOne: false
+            referencedRelation: "igrejas"
             referencedColumns: ["id"]
           },
         ]
@@ -736,6 +866,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      igreja_distrito: { Args: { _igreja_id: string }; Returns: string }
+      igreja_na_minha_jurisdicao: {
+        Args: { _igreja_id: string }
+        Returns: boolean
+      }
       jovens_a_transferir: {
         Args: never
         Returns: {
@@ -747,6 +882,10 @@ export type Database = {
         }[]
       }
       public_dashboard_stats: { Args: never; Returns: Json }
+      semestre_bloqueado: {
+        Args: { _ano: number; _igreja_id: string; _semestre: number }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "local" | "super_admin"
