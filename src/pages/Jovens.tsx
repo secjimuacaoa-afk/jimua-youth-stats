@@ -481,14 +481,16 @@ const Jovens = () => {
     setForm({
       nome: jovem.nome, sexo: jovem.sexo, dataNascimento: jovem.data_nascimento,
       categoria: jovem.categoria, escolaridade: jovem.escolaridade || "",
+      areaFormacao: jovem.area_formacao || "",
       ocupacao: jovem.ocupacao || "", estadoCivil: jovem.estado_civil || "",
       origem: jovem.origem || "", activo: jovem.activo,
       motivoInactividade: jovem.motivo_inactividade || "",
       documentacao: jovem.documentacao || [],
-      semestre: jovem.semestre || 1,
+      semestre: jovem.semestre || SEM_CORRENTE.semestre,
       anoSemestre: jovem.ano_semestre || currentYear,
       documentoFile: null,
       biNumero: jovem.bi_numero || "",
+      semBi: !!jovem.sem_bi,
       classeId: jovem.classe_id || "",
     });
     setEditDialogOpen(true);
