@@ -540,8 +540,8 @@ const Jovens = () => {
                 <TableCell>{jovem.sexo === "masculino" ? "M" : "F"}</TableCell>
                 <TableCell>{age}</TableCell>
                 <TableCell>
-                  <Badge variant={isOja ? "destructive" : calcParteEtaria(jovem.data_nascimento) === "H" ? "secondary" : "default"}>
-                    {isOja ? "Jovem Adulto" : calcParteEtaria(jovem.data_nascimento) === "H" ? "12–17 anos" : "18–25 anos"}
+                  <Badge variant={isOja ? "destructive" : calcParteEtaria(jovem.data_nascimento) === "G" ? "secondary" : "default"}>
+                    {isOja ? "Jovem Adulto" : calcParteEtaria(jovem.data_nascimento) === "G" ? "12–17 anos" : "18–25 anos"}
                   </Badge>
                 </TableCell>
                 <TableCell>{getLabel(CATEGORIA_LABELS, jovem.categoria)}</TableCell>
