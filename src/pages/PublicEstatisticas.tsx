@@ -69,7 +69,7 @@ const PublicEstatisticas = () => {
           <img src={logoJimua} alt="JIMUA" className="h-8 w-8" />
           <h1 className="text-lg font-bold text-foreground">JIMUA ANALYTICS — Estatísticas Públicas</h1>
         </div>
-        <Link to="/" className="text-sm text-primary hover:underline">Entrar</Link>
+        <Link to="/login" className="text-sm text-primary hover:underline">Entrar</Link>
       </header>
 
       <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">

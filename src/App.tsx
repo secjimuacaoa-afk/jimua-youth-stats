@@ -34,7 +34,8 @@ const App = () => (
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Login />} />
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/jovens" element={<ProtectedRoute><Jovens /></ProtectedRoute>} />
             <Route path="/classes" element={<ProtectedRoute localOnly><Classes /></ProtectedRoute>} />
