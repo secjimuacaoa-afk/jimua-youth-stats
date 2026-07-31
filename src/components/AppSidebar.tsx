@@ -32,7 +32,7 @@ const AppSidebar = () => {
     { to: "/configuracoes", icon: Settings, label: "Configurações" },
   ];
 
-  const handleLogout = async () => { await signOut(); navigate("/"); };
+  const handleLogout = async () => { await signOut(); navigate("/login"); };
 
   return (
     <aside className={cn(

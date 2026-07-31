@@ -20,7 +20,7 @@ const ProtectedRoute = ({ children, adminOnly, superAdminOnly, localOnly, distri
     );
   }
 
-  if (!user) return <Navigate to="/" replace />;
+  if (!user) return <Navigate to="/login" replace />;
   if (superAdminOnly && !isSuperAdmin) return <Navigate to="/dashboard" replace />;
   if (adminOnly && !isAdmin) return <Navigate to="/dashboard" replace />;
   if (localOnly && (isAdmin || isSuperAdmin || profile?.tipo !== "local")) return <Navigate to="/dashboard" replace />;
