@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,11 +48,13 @@ const Login = () => {
       <Card className="relative z-10 w-full max-w-md border-0 shadow-2xl animate-fade-in">
         <CardHeader className="text-center pb-2 pt-8">
           <div className="flex justify-center mb-4">
-            <img src={logoJimua} alt="JIMUA" className="h-24 w-auto" />
+            <img src={logoJimua} alt="Logótipo da Juventude da Igreja Metodista Unida" className="h-28 w-auto" />
           </div>
-          <h1 className="text-xl font-bold text-foreground">JIMUA ANALYTICS</h1>
-          <p className="text-sm text-muted-foreground">
-            Sistema de Gestão de dados Estatísticos
+          <p className="font-display text-base font-bold text-foreground leading-tight">Igreja Metodista Unida</p>
+          <p className="text-sm text-muted-foreground">Conferência Anual do Oeste de Angola</p>
+          <p className="text-sm font-semibold text-primary">Organização de Jovens Regulares</p>
+          <p className="text-xs text-muted-foreground pt-2">
+            Plataforma de Gestão e Estatística
           </p>
         </CardHeader>
 
@@ -90,6 +92,9 @@ const Login = () => {
 
           <p className="text-xs text-center text-muted-foreground mt-6">
             Acesso restrito. Contacte o Secretário Distrital para obter credenciais.
+          </p>
+          <p className="text-xs text-center mt-3">
+            <Link to="/" className="text-primary hover:underline">Voltar à página inicial</Link>
           </p>
         </CardContent>
       </Card>
