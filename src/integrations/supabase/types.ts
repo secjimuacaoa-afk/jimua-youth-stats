@@ -881,17 +881,15 @@ export type Database = {
           nome: string
         }[]
       }
-      public_dashboard_stats:
-        | { Args: never; Returns: Json }
-        | {
-            Args: {
-              _circuito_id?: string
-              _distrito_id?: string
-              _igreja_id?: string
-              _intendencia_id?: string
-            }
-            Returns: Json
-          }
+      public_dashboard_stats: {
+        Args: {
+          _circuito_id?: string
+          _distrito_id?: string
+          _igreja_id?: string
+          _intendencia_id?: string
+        }
+        Returns: Json
+      }
       public_estruturas: { Args: never; Returns: Json }
       semestre_bloqueado: {
         Args: { _ano: number; _igreja_id: string; _semestre: number }
