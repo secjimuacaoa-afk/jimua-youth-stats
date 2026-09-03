@@ -6,9 +6,9 @@ Intervenção cirúrgica: apenas camada de apresentação. Sem alterações a ba
 
 Adicionar (sem remover o conteúdo actual):
 
-- Bloco "Propriedade e Gestão da Plataforma" — Direcção Geral da Juventude de Luanda, email jimua.caoa@gmail.com (link mailto).
-- Definição institucional: "JUVENTUDE DA IGREJA METODISTA UNIDA — é a organização de jovens da Igreja Metodista Unida, uma escola na qual os mesmos são dirigidos e preparados para se tornarem membros úteis à Igreja e à Sociedade."
-- Cartões "ARTIGO 2.º": VISÃO (ser uma escola de excelência) e MISSÃO (dirigir e preparar jovens com conhecimentos e habilidades, a fim de se tornarem mais-valias para a igreja e a sociedade).
+- Bloco "Propriedade e Gestão da Plataforma" — Direcção Geral da Juventude de Luanda, email [jimua.caoa@gmail.com](mailto:jimua.caoa@gmail.com) (link mailto).
+- Definição institucional: "A Juventude da Igreja Metodista Unida em Angola  — é a organização de jovens da Igreja Metodista Unida, uma escola na qual os mesmos são dirigidos e preparados para se tornarem membros úteis à Igreja e à Sociedade."
+- Cartões ".º": VISÃO (ser uma escola de excelência) e MISSÃO (dirigir e preparar jovens com conhecimentos e habilidades, a fim de se tornarem mais-valias para a igreja e a sociedade).
 
 ## 2. Sistema visual único de gráficos
 
@@ -43,6 +43,7 @@ Criar um módulo de tema de gráficos partilhado (`src/lib/chartTheme.ts` + `src
 Reorganizar a página do Dashboard (mesma rota, mesmos dados e filtros já existentes) segundo a referência fornecida, com a mesma linguagem visual para os três perfis e apenas o âmbito de cada nível:
 
 Ordem das secções:
+
 1. Cabeçalho de boas-vindas + filtros actuais (inalterados).
 2. Faixa de indicadores: Total de Jovens Activos, Inactivos, Masculino, Feminino (cards já existentes, apenas afinados).
 3. Distribuição por Faixa Etária · Distribuição por Sexo · Actividades Recentes.
@@ -51,6 +52,7 @@ Ordem das secções:
 6. Igrejas locais com mais jovens (Geral e Distrital; oculto no perfil Local, como hoje).
 
 Diferenças por perfil (respeitando as regras de acesso já implementadas):
+
 - Secretário Geral: consolidado nacional, filtro de Distrito disponível.
 - Secretário Distrital: mesmos blocos, âmbito limitado ao seu distrito.
 - Secretário Local: mesmos blocos aplicáveis à sua igreja; blocos sem dados na sua jurisdição não são apresentados.
