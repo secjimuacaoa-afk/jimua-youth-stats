@@ -16,6 +16,7 @@ import Estatisticas from "./pages/Estatisticas";
 import Configuracoes from "./pages/Configuracoes";
 import PublicDashboard from "./pages/PublicDashboard";
 import PublicEstatisticas from "./pages/PublicEstatisticas";
+import Sobre from "./pages/Sobre";
 import Contactos from "./pages/Contactos";
 import Ocorrencias from "./pages/Ocorrencias";
 import Actividades from "./pages/Actividades";
