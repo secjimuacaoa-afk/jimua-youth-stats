@@ -16,6 +16,7 @@ import Estatisticas from "./pages/Estatisticas";
 import Configuracoes from "./pages/Configuracoes";
 import PublicDashboard from "./pages/PublicDashboard";
 import PublicEstatisticas from "./pages/PublicEstatisticas";
+import Sobre from "./pages/Sobre";
 import Contactos from "./pages/Contactos";
 import Ocorrencias from "./pages/Ocorrencias";
 import Actividades from "./pages/Actividades";
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/utilizadores" element={<ProtectedRoute adminOnly><Utilizadores /></ProtectedRoute>} />
             <Route path="/estatisticas" element={<ProtectedRoute><Estatisticas /></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
+            <Route path="/sobre" element={<Sobre />} />
             <Route path="/publico/dashboard" element={<PublicDashboard />} />
             <Route path="/publico/estatisticas" element={<PublicEstatisticas />} />
             <Route path="*" element={<NotFound />} />
