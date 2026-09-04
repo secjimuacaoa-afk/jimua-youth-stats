@@ -7,25 +7,8 @@ import {
 } from "@/lib/labels";
 import PublicHeader from "@/components/public/PublicHeader";
 import PublicStatsPanel from "@/components/public/PublicStatsPanel";
+import SimpleBars from "@/components/charts/SimpleBars";
 
-const BarSimple = ({ data }: { data: { name: string; value: number }[] }) => {
-  const max = Math.max(...data.map((d) => d.value), 1);
-  return (
-    <div className="space-y-3">
-      {data.map((item) => (
-        <div key={item.name} className="space-y-1">
-          <div className="flex justify-between text-sm">
-            <span className="text-card-foreground">{item.name}</span>
-            <span className="font-semibold tabular-nums text-card-foreground">{item.value}</span>
-          </div>
-          <div className="h-3 bg-muted rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-primary to-navy-light rounded-full transition-all duration-700" style={{ width: `${(item.value / max) * 100}%` }} />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
 
 const mapLabels = (arr: any[] | undefined, labels: Record<string, string>) =>
   (arr || []).map((x) => ({ name: getLabel(labels, x.name), value: x.value }));
