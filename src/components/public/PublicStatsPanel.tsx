@@ -7,10 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileSpreadsheet, FileText, UserMinus, Users } from "lucide-react";
 import {
-  Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart,
+  Area, AreaChart, Bar, BarChart, CartesianGrid, ComposedChart, LabelList, Legend, Line,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import ChartCard from "@/components/public/ChartCard";
+import ChartTooltip from "@/components/charts/ChartTooltip";
+import DonutChart from "@/components/charts/DonutChart";
+import RankingBars from "@/components/charts/RankingBars";
+import { ANIM, axisTick, CHART, chartMargin, gridProps } from "@/lib/chartTheme";
 import { exportarExcelPublico, exportarPdfPublico, StatsPublicos } from "@/lib/exportPublico";
 import { toast } from "@/hooks/use-toast";
 
@@ -18,12 +22,6 @@ const TODOS = "todos";
 
 type Estrutura = { id: string; nome: string; distrito_id?: string; intendencia_id?: string; circuito_id?: string };
 
-const COR_PRIMARIA = "hsl(var(--primary))";
-const COR_SECUNDARIA = "hsl(var(--secondary))";
-const COR_LIGHT = "hsl(var(--navy-light))";
-const COR_DESTRUTIVA = "hsl(var(--destructive))";
-
-const chartMargin = { top: 8, right: 8, left: -16, bottom: 0 };
 
 const PublicStatsPanel = () => {
   const [distrito, setDistrito] = useState(TODOS);
