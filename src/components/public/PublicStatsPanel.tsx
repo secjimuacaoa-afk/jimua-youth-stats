@@ -7,10 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileSpreadsheet, FileText, UserMinus, Users } from "lucide-react";
 import {
-  Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart,
+  Area, AreaChart, Bar, BarChart, CartesianGrid, ComposedChart, LabelList, Legend, Line,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import ChartCard from "@/components/public/ChartCard";
+import ChartTooltip from "@/components/charts/ChartTooltip";
+import DonutChart from "@/components/charts/DonutChart";
+import RankingBars from "@/components/charts/RankingBars";
+import { ANIM, axisTick, CHART, chartMargin, gridProps } from "@/lib/chartTheme";
 import { exportarExcelPublico, exportarPdfPublico, StatsPublicos } from "@/lib/exportPublico";
 import { toast } from "@/hooks/use-toast";
 
@@ -18,12 +22,6 @@ const TODOS = "todos";
 
 type Estrutura = { id: string; nome: string; distrito_id?: string; intendencia_id?: string; circuito_id?: string };
 
-const COR_PRIMARIA = "hsl(var(--primary))";
-const COR_SECUNDARIA = "hsl(var(--secondary))";
-const COR_LIGHT = "hsl(var(--navy-light))";
-const COR_DESTRUTIVA = "hsl(var(--destructive))";
-
-const chartMargin = { top: 8, right: 8, left: -16, bottom: 0 };
 
 const PublicStatsPanel = () => {
   const [distrito, setDistrito] = useState(TODOS);
@@ -202,24 +200,27 @@ const PublicStatsPanel = () => {
         <ChartCard
           className="lg:col-span-2"
           title="Crescimento semestral"
-          description="Efectivo no início de cada semestre, entradas e saídas registadas e efectivo no fim. Nº actual = anterior + entradas − saídas."
+          description="Entradas e saídas registadas em cada semestre, com a linha do efectivo actual por cima. Nº actual = anterior + entradas − saídas."
           empty={serieData.length === 0}
           emptyMessage="Ainda não há semestres consolidados para este âmbito. Os valores aparecem à medida que as igrejas fecham os períodos."
           tableHeaders={["Período", "Anterior / Entradas / Saídas / Actual"]}
           table={serie.map((p) => ({ label: `${p.ano} · ${p.semestre}.º semestre`, value: `${p.base} / ${p.entradas} / ${p.saidas} / ${p.actual}` }))}
         >
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={serieData} margin={chartMargin}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="periodo" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
-              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--card-foreground))" }} />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="Anterior" fill={COR_LIGHT} radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Entradas" fill={COR_PRIMARIA} radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Saídas" fill={COR_DESTRUTIVA} radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Actual" fill={COR_SECUNDARIA} radius={[4, 4, 0, 0]} />
-            </BarChart>
+          <ResponsiveContainer width="100%" height={300}>
+            <ComposedChart data={serieData} margin={chartMargin}>
+              <CartesianGrid {...gridProps} />
+              <XAxis dataKey="periodo" tickLine={false} axisLine={false} tick={axisTick} />
+              <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={axisTick} width={44} />
+              <Tooltip cursor={{ fill: "hsl(var(--muted) / 0.5)" }} content={<ChartTooltip />} />
+              <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} />
+              <Bar dataKey="Entradas" fill={CHART.crescimento} radius={[4, 4, 0, 0]} maxBarSize={34} animationDuration={ANIM}>
+                <LabelList dataKey="Entradas" position="top" style={{ fontSize: 11, fill: CHART.eixo }} />
+              </Bar>
+              <Bar dataKey="Saídas" fill={CHART.alerta} radius={[4, 4, 0, 0]} maxBarSize={34} animationDuration={ANIM}>
+                <LabelList dataKey="Saídas" position="top" style={{ fontSize: 11, fill: CHART.eixo }} />
+              </Bar>
+              <Line type="monotone" dataKey="Actual" stroke={CHART.principal} strokeWidth={3} dot={{ r: 4, fill: CHART.principal }} animationDuration={ANIM} />
+            </ComposedChart>
           </ResponsiveContainer>
         </ChartCard>
 
@@ -231,33 +232,40 @@ const PublicStatsPanel = () => {
           tableHeaders={["Período", "Taxa"]}
           table={serie.map((p) => ({ label: `${p.ano} · ${p.semestre}.º semestre`, value: `${p.taxa_abandono}%` }))}
         >
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={serieData} margin={chartMargin}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="periodo" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
-              <YAxis unit="%" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
-              <Tooltip formatter={(v: number) => `${v}%`} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--card-foreground))" }} />
-              <Line type="monotone" dataKey="Abandono" stroke={COR_DESTRUTIVA} strokeWidth={3} dot={{ r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          {serieData.length === 1 ? (
+            <div className="flex flex-col items-center justify-center py-10">
+              <span className="font-display text-5xl font-bold tabular-nums" style={{ color: CHART.alerta }}>
+                {serieData[0].Abandono}%
+              </span>
+              <span className="mt-2 text-sm text-muted-foreground">{serieData[0].periodo}</span>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={240}>
+              <AreaChart data={serieData} margin={chartMargin}>
+                <defs>
+                  <linearGradient id="grad-abandono" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={CHART.alerta} stopOpacity={0.25} />
+                    <stop offset="100%" stopColor={CHART.alerta} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid {...gridProps} />
+                <XAxis dataKey="periodo" tickLine={false} axisLine={false} tick={axisTick} />
+                <YAxis unit="%" tickLine={false} axisLine={false} tick={axisTick} width={44} />
+                <Tooltip content={<ChartTooltip suffix="%" />} />
+                <Area type="monotone" dataKey="Abandono" stroke={CHART.alerta} strokeWidth={3} fill="url(#grad-abandono)" dot={{ r: 3 }} activeDot={{ r: 5 }} animationDuration={ANIM} />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
         </ChartCard>
 
         <ChartCard
-          title="Distribuição por género"
+          title="Distribuição por sexo"
           description="Peso de jovens do sexo masculino e feminino no total de jovens activos do âmbito seleccionado."
           empty={totalGenero === 0}
           tableHeaders={["Sexo", "Jovens (percentagem)"]}
           table={generoData.map((g) => ({ label: g.name, value: `${g.value} (${pct(g.value)})` }))}
         >
-          <ResponsiveContainer width="100%" height={240}>
-            <PieChart>
-              <Pie data={generoData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={90} paddingAngle={3}>
-                {generoData.map((g, i) => <Cell key={g.name} fill={i === 0 ? COR_PRIMARIA : COR_SECUNDARIA} />)}
-              </Pie>
-              <Tooltip formatter={(v: number, n) => [`${v} (${pct(v)})`, n as string]} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--card-foreground))" }} />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-            </PieChart>
-          </ResponsiveContainer>
+          <DonutChart data={generoData} centroLabel="Jovens activos" colors={[CHART.principal, CHART.destaque]} />
         </ChartCard>
 
         <ChartCard
@@ -269,33 +277,29 @@ const PublicStatsPanel = () => {
         >
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={faixaData} margin={chartMargin}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="name" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
-              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--card-foreground))" }} />
-              <Bar dataKey="value" name="Jovens" fill={COR_PRIMARIA} radius={[4, 4, 0, 0]} />
+              <CartesianGrid {...gridProps} />
+              <XAxis dataKey="name" tickLine={false} axisLine={false} tick={axisTick} />
+              <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={axisTick} width={44} />
+              <Tooltip cursor={{ fill: "hsl(var(--muted) / 0.5)" }} content={<ChartTooltip total={faixaData.reduce((a, b) => a + b.value, 0)} />} />
+              <Bar dataKey="value" name="Jovens" fill={CHART.principal} radius={[6, 6, 0, 0]} maxBarSize={72} animationDuration={ANIM}>
+                <LabelList dataKey="value" position="top" style={{ fontSize: 12, fontWeight: 600, fill: CHART.eixo }} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
 
         <ChartCard
+          className="lg:col-span-2"
           title="Igrejas locais com mais jovens"
           description="As dez igrejas locais com maior número de jovens activos dentro do âmbito seleccionado."
           empty={igrejasTop.length === 0}
           tableHeaders={["Igreja Local", "Jovens"]}
           table={igrejasTop.map((i) => ({ label: i.name, value: i.value }))}
         >
-          <ResponsiveContainer width="100%" height={Math.max(240, igrejasTop.length * 34)}>
-            <BarChart data={igrejasTop} layout="vertical" margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
-              <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
-              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--card-foreground))" }} />
-              <Bar dataKey="value" name="Jovens activos" fill={COR_LIGHT} radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <RankingBars data={igrejasTop} />
         </ChartCard>
       </div>
+
     </div>
   );
 };

@@ -8,11 +8,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { CATEGORIA_LABELS, getLabel } from "@/lib/labels";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from "recharts";
+import ChartTooltip from "@/components/charts/ChartTooltip";
+import DonutChart from "@/components/charts/DonutChart";
+import RankingBars from "@/components/charts/RankingBars";
+import { ANIM, axisTick, CHART, chartMargin, gridProps } from "@/lib/chartTheme";
 
 const calcAge = (dob: string) => Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
 
-const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "hsl(var(--muted-foreground))"];
+
 
 const Dashboard = () => {
   const { profile, isAdmin, isSuperAdmin, userEstruturas, welcomeInfo } = useAuth();
@@ -158,16 +162,9 @@ const Dashboard = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-base">Distribuição por Género</CardTitle></CardHeader>
+            <CardHeader className="pb-3"><CardTitle className="text-base">Distribuição por Sexo</CardTitle></CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                  <Pie data={genderData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={(e) => `${e.name}: ${e.value}`}>
-                    {genderData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <DonutChart data={genderData} centroLabel="Jovens activos" colors={[CHART.principal, CHART.destaque]} />
             </CardContent>
           </Card>
 
@@ -175,12 +172,15 @@ const Dashboard = () => {
             <CardHeader className="pb-3"><CardTitle className="text-base">Faixa Etária</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                  <Pie data={ageData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={(e) => `${e.name}: ${e.value}`}>
-                    {ageData.map((_, i) => <Cell key={i} fill={COLORS[i + 1]} />)}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
+                <BarChart data={ageData} margin={chartMargin}>
+                  <CartesianGrid {...gridProps} />
+                  <XAxis dataKey="name" tickLine={false} axisLine={false} tick={axisTick} />
+                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={axisTick} width={44} />
+                  <Tooltip cursor={{ fill: "hsl(var(--muted) / 0.5)" }} content={<ChartTooltip total={stats.total} />} />
+                  <Bar dataKey="value" name="Jovens" fill={CHART.principal} radius={[6, 6, 0, 0]} maxBarSize={72} animationDuration={ANIM}>
+                    <LabelList dataKey="value" position="top" style={{ fontSize: 12, fontWeight: 600, fill: CHART.eixo }} />
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
@@ -190,12 +190,14 @@ const Dashboard = () => {
               <CardHeader className="pb-3"><CardTitle className="text-base">Comparação por Categoria</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={stats.categorias}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                  <BarChart data={stats.categorias} margin={chartMargin}>
+                    <CartesianGrid {...gridProps} />
+                    <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: CHART.eixo }} />
+                    <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={axisTick} width={44} />
+                    <Tooltip cursor={{ fill: "hsl(var(--muted) / 0.5)" }} content={<ChartTooltip total={stats.total} />} />
+                    <Bar dataKey="value" name="Jovens" fill={CHART.principal} radius={[6, 6, 0, 0]} maxBarSize={56} animationDuration={ANIM}>
+                      <LabelList dataKey="value" position="top" style={{ fontSize: 11, fontWeight: 600, fill: CHART.eixo }} />
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -204,17 +206,9 @@ const Dashboard = () => {
 
           {stats.churchCounts.length > 0 && (
             <Card>
-              <CardHeader className="pb-3"><CardTitle className="text-base">Top 10 Igrejas</CardTitle></CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-base">Igrejas locais com mais jovens</CardTitle></CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={stats.churchCounts} layout="vertical" margin={{ left: 60 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 11 }} />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="hsl(var(--secondary))" radius={[0, 6, 6, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <RankingBars data={stats.churchCounts} />
               </CardContent>
             </Card>
           )}
@@ -229,6 +223,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
       </div>
     </DashboardLayout>
   );

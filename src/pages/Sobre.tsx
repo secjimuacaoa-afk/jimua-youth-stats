@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, ClipboardList, CheckCircle2, Layers, Lock } from "lucide-react";
+import { ShieldCheck, ClipboardList, CheckCircle2, Layers, Lock, Building2, Eye, Target } from "lucide-react";
 import PublicHeader from "@/components/public/PublicHeader";
 
 const CICLO = [
@@ -50,15 +50,68 @@ const Sobre = () => (
         </div>
       </section>
 
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 py-12 space-y-4">
-        <h2 className="font-display text-2xl font-bold text-foreground">Missão da Organização de Jovens</h2>
-        <p className="text-base text-muted-foreground leading-relaxed">
-          Acompanhar, formar e servir a juventude metodista em todas as igrejas locais da Conferência Anual do Oeste
-          de Angola, assegurando que cada jovem é conhecido, acompanhado no seu percurso e devidamente encaminhado à
-          OJA quando completa a idade. A plataforma existe para servir esse acompanhamento pastoral com informação
-          rigorosa e atempada — não para vigiar pessoas.
-        </p>
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 py-12 space-y-6">
+        <div className="space-y-4">
+          <h2 className="font-display text-2xl font-bold text-foreground">Juventude da Igreja Metodista Unida</h2>
+          <p className="text-base text-muted-foreground leading-relaxed">
+            A <strong className="text-foreground">Juventude da Igreja Metodista Unida em Angola</strong> é a organização de
+            jovens da Igreja Metodista Unida, uma escola na qual os mesmos são dirigidos e preparados para se tornarem
+            membros úteis à Igreja e à Sociedade.
+          </p>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Card className="h-full border-l-4 border-l-primary">
+            <CardContent className="pt-6 space-y-2">
+              <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <Eye size={22} aria-hidden="true" />
+              </div>
+              <p className="text-xs font-bold tracking-[0.18em] uppercase text-muted-foreground">Artigo 2.º · Visão</p>
+              <p className="text-base text-card-foreground leading-relaxed">Ser uma escola de excelência.</p>
+            </CardContent>
+          </Card>
+          <Card className="h-full border-l-4 border-l-secondary">
+            <CardContent className="pt-6 space-y-2">
+              <div className="h-11 w-11 rounded-xl bg-secondary/20 text-secondary-foreground flex items-center justify-center">
+                <Target size={22} aria-hidden="true" />
+              </div>
+              <p className="text-xs font-bold tracking-[0.18em] uppercase text-muted-foreground">Artigo 2.º · Missão</p>
+              <p className="text-base text-card-foreground leading-relaxed">
+                Dirigir e preparar jovens com conhecimentos e habilidades, a fim de se tornarem mais-valias para a igreja
+                e a sociedade.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 size={20} className="text-primary" aria-hidden="true" /> Propriedade e Gestão da Plataforma
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1 text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">Direcção Geral da Juventude de Luanda</p>
+            <p>
+              Email:{" "}
+              <a href="mailto:jimua.caoa@gmail.com" className="font-medium text-primary underline underline-offset-4 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                jimua.caoa@gmail.com
+              </a>
+            </p>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-4">
+          <h2 className="font-display text-2xl font-bold text-foreground">Missão da Organização de Jovens</h2>
+          <p className="text-base text-muted-foreground leading-relaxed">
+            Acompanhar, formar e servir a juventude metodista em todas as igrejas locais da Conferência Anual do Oeste
+            de Angola, assegurando que cada jovem é conhecido, acompanhado no seu percurso e devidamente encaminhado à
+            OJA quando completa a idade. A plataforma existe para servir esse acompanhamento pastoral com informação
+            rigorosa e atempada — não para vigiar pessoas.
+          </p>
+        </div>
       </section>
+
 
       <section className="bg-muted/40 border-y border-border">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 space-y-6">
