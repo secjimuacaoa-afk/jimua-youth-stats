@@ -65,7 +65,7 @@ const PublicEstatisticas = () => {
               {charts.map((cat) => (
                 <Card key={cat.label}>
                   <CardHeader className="pb-3"><CardTitle className="text-base">{cat.label}</CardTitle></CardHeader>
-                  <CardContent><BarSimple data={cat.data} /></CardContent>
+                  <CardContent><SimpleBars data={cat.data} /></CardContent>
                 </Card>
               ))}
             </div>
