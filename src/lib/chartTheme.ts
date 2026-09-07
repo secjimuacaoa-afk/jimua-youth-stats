@@ -27,6 +27,20 @@ export const CHART_SERIES = [
   CHART.referencia,
 ] as const;
 
+/** Paleta categórica: uma cor distinta por indicador. */
+export const CHART_CATEGORIA = [
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+  "hsl(var(--chart-6))",
+  "hsl(var(--chart-7))",
+  "hsl(var(--chart-8))",
+] as const;
+
+export const corDeIndice = (i: number) => CHART_CATEGORIA[i % CHART_CATEGORIA.length];
+
 export const axisTick = { fontSize: 12, fill: CHART.eixo } as const;
 
 export const chartMargin = { top: 12, right: 12, left: -14, bottom: 0 } as const;
