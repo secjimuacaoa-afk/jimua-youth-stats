@@ -57,6 +57,16 @@
     --navy: 220 60% 20%;
     --navy-dark: 220 60% 12%;
     --navy-light: 220 40% 35%;
+
+    /* Paleta categórica dos gráficos — cores distinguíveis entre indicadores */
+    --chart-1: 220 60% 24%;
+    --chart-2: 142 65% 38%;
+    --chart-3: 45 85% 50%;
+    --chart-4: 199 85% 42%;
+    --chart-5: 275 45% 50%;
+    --chart-6: 17 80% 52%;
+    --chart-7: 175 60% 34%;
+    --chart-8: 330 55% 50%;
   }
 
   .dark {
@@ -95,5 +105,64 @@
 
   h1, h2, h3, h4 {
     @apply font-display tracking-tight;
+  }
+}
+
+/* ---- Impressão do Mapa Estatístico ---- */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .no-print,
+  aside,
+  nav,
+  header.app-topbar {
+    display: none !important;
+  }
+
+  .print-area {
+    position: static !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  .print-area * {
+    color: #000 !important;
+    box-shadow: none !important;
+  }
+
+  .print-area table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+    page-break-inside: auto;
+  }
+
+  .print-area thead {
+    display: table-header-group;
+  }
+
+  .print-area tr {
+    page-break-inside: avoid;
+  }
+
+  .print-area th,
+  .print-area td {
+    border: 1px solid #000 !important;
+    padding: 4px 6px;
+    background: #fff !important;
+  }
+
+  .print-block {
+    page-break-inside: avoid;
   }
 }
