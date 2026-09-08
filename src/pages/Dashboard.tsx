@@ -1,6 +1,6 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
-import { Users, TrendingUp, UserPlus, UserMinus, GraduationCap, Heart, BarChart3 } from "lucide-react";
+import { Users, TrendingUp, UserPlus, UserMinus, GraduationCap, Heart, BarChart3, Church, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
@@ -97,6 +97,14 @@ const Dashboard = () => {
     return { total, inactivos: inactivos.length, masc, fem, h, i, estudantes, solteiros, categorias, churchCounts, novosMes, novosAno };
   }, [jovens, isAdmin, userEstruturas, filterDistrito, filterIntendencia, filterCircuito, filterIgreja]);
 
+  const estruturaCounts = useMemo(() => {
+    const ints = filterDistrito === "all" ? (intendencias as any[]) : (intendencias as any[]).filter((i: any) => i.distrito_id === filterDistrito);
+    const intIds = new Set(ints.map((i: any) => i.id));
+    const circIds = new Set((circuitos as any[]).filter((c: any) => intIds.has(c.intendencia_id)).map((c: any) => c.id));
+    const igs = (allIgrejas as any[]).filter((g: any) => circIds.has(g.circuito_id));
+    return { intendencias: ints.length, igrejas: igs.length };
+  }, [intendencias, circuitos, allIgrejas, filterDistrito]);
+
   const genderData = [{ name: "Masculino", value: stats.masc }, { name: "Feminino", value: stats.fem }];
   const ageData = [{ name: "12–17 anos", value: stats.h }, { name: "18–25 anos", value: stats.i }];
 
@@ -149,6 +157,14 @@ const Dashboard = () => {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {isAdmin && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {isSuperAdmin && <StatCard title="Distritos" value={(distritos as any[]).length} icon={Church} change="Conferência" />}
+            <StatCard title="Intendências" value={estruturaCounts.intendencias} icon={MapPin} change={isSuperAdmin ? "Total nacional" : "No seu distrito"} />
+            <StatCard title="Igrejas Locais" value={estruturaCounts.igrejas} icon={Church} change={isSuperAdmin ? "Total nacional" : "No seu distrito"} />
+          </div>
         )}
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
