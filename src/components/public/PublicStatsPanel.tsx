@@ -78,16 +78,6 @@ const PublicStatsPanel = () => {
   ];
   const igrejasTop = s.igrejas_top || [];
 
-  const nomeDe = (lista: Estrutura[] | undefined, id: string) =>
-    id === TODOS ? undefined : lista?.find((x) => x.id === id)?.nome;
-
-  const escopo = {
-    distrito: nomeDe(estruturas?.distritos, distrito),
-    intendencia: nomeDe(estruturas?.intendencias, intendencia),
-    circuito: nomeDe(estruturas?.circuitos, circuito),
-    igreja: nomeDe(estruturas?.igrejas, igreja),
-  };
-
   const resumo = [
     { label: "Total de jovens activos", value: s.total ?? 0, icon: Users },
     { label: "Jovens inactivos", value: s.inactivos ?? 0, icon: UserMinus },
