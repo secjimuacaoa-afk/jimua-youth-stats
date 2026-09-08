@@ -123,7 +123,11 @@ const Estruturas = () => {
                                   <div className="flex items-center gap-3 w-full">
                                     <MapPin size={14} className="text-secondary" />
                                     <span>{int.nome}</span>
-                                    <Badge variant="outline">{circs.length} circuito(s)</Badge>
+                                    <Badge variant="outline">
+                                      {usaCircuitos
+                                        ? `${circs.length} circuito(s)`
+                                        : `${circs.reduce((n: number, c: any) => n + (igrByCircuito[c.id]?.length || 0), 0)} igreja(s)`}
+                                    </Badge>
                                     {isAdmin && <Button size="icon" variant="ghost" className="h-6 w-6 ml-auto mr-2" onClick={(e) => { e.stopPropagation(); open("int", int.id, int.distrito_id, int.nome); }}><Pencil size={12} /></Button>}
                                   </div>
                                 </AccordionTrigger>
@@ -178,9 +182,10 @@ const Estruturas = () => {
                               </AccordionItem>
                             );
                           })}
-                        </Accordion>
-                      </div>
-                    </AccordionContent>
+                                    </Accordion>
+                                  </div>
+                                  )}
+                                </AccordionContent>
                   </AccordionItem>
                 );
               })}
