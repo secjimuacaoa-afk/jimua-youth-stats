@@ -128,6 +128,19 @@ const Estruturas = () => {
                                   </div>
                                 </AccordionTrigger>
                                 <AccordionContent>
+                                  {!usaCircuitos ? (
+                                    <div className="ml-6 space-y-1">
+                                      {isAdmin && circs[0] && <Button size="sm" variant="ghost" onClick={() => open("igr", null, circs[0].id)}><Plus size={13} className="mr-1" /> Nova Igreja</Button>}
+                                      {circs.flatMap((c: any) => igrByCircuito[c.id] || []).length === 0 && <p className="text-xs text-muted-foreground py-2">Nenhuma igreja registada</p>}
+                                      {circs.flatMap((c: any) => igrByCircuito[c.id] || []).map((ig: any) => (
+                                        <div key={ig.id} className="flex items-center gap-3 p-2 rounded hover:bg-muted/50">
+                                          <Church size={14} className="text-primary" />
+                                          <span className="text-sm">{ig.nome}</span>
+                                          {isAdmin && <Button size="icon" variant="ghost" className="h-6 w-6 ml-auto" onClick={() => open("igr", ig.id, ig.circuito_id, ig.nome)}><Pencil size={12} /></Button>}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
                                   <div className="ml-6 space-y-2">
                                     {isAdmin && <Button size="sm" variant="ghost" onClick={() => open("circ", null, int.id)}><Plus size={13} className="mr-1" /> Novo Circuito</Button>}
                                     <Accordion type="multiple">
