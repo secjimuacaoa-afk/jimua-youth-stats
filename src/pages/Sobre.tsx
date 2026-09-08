@@ -13,7 +13,7 @@ const CICLO = [
   {
     icon: CheckCircle2,
     title: "2. Validação (Distrito)",
-    desc: "A Assembleia Distrital aprova a estatística de cada igreja uma vez por semestre. Depois da aprovação o período fica bloqueado e só é reaberto mediante autorização registada.",
+    desc: "Encerrado o semestre, o Secretário Distrital aprova/valida a estatística; a partir daí o período fica bloqueado para edições, salvo autorização registada.",
   },
   {
     icon: Layers,
@@ -66,7 +66,7 @@ const Sobre = () => (
               <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                 <Eye size={22} aria-hidden="true" />
               </div>
-              <p className="text-xs font-bold tracking-[0.18em] uppercase text-muted-foreground">Artigo 2.º · Visão</p>
+              <p className="text-xs font-bold tracking-[0.18em] uppercase text-muted-foreground">Visão</p>
               <p className="text-base text-card-foreground leading-relaxed">Ser uma escola de excelência.</p>
             </CardContent>
           </Card>
@@ -75,7 +75,7 @@ const Sobre = () => (
               <div className="h-11 w-11 rounded-xl bg-secondary/20 text-secondary-foreground flex items-center justify-center">
                 <Target size={22} aria-hidden="true" />
               </div>
-              <p className="text-xs font-bold tracking-[0.18em] uppercase text-muted-foreground">Artigo 2.º · Missão</p>
+              <p className="text-xs font-bold tracking-[0.18em] uppercase text-muted-foreground">Missão</p>
               <p className="text-base text-card-foreground leading-relaxed">
                 Dirigir e preparar jovens com conhecimentos e habilidades, a fim de se tornarem mais-valias para a igreja
                 e a sociedade.
@@ -84,32 +84,6 @@ const Sobre = () => (
           </Card>
         </div>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Building2 size={20} className="text-primary" aria-hidden="true" /> Propriedade e Gestão da Plataforma
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">Direcção Geral da Juventude de Luanda</p>
-            <p>
-              Email:{" "}
-              <a href="mailto:jimua.caoa@gmail.com" className="font-medium text-primary underline underline-offset-4 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                jimua.caoa@gmail.com
-              </a>
-            </p>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-4">
-          <h2 className="font-display text-2xl font-bold text-foreground">Missão da Organização de Jovens</h2>
-          <p className="text-base text-muted-foreground leading-relaxed">
-            Acompanhar, formar e servir a juventude metodista em todas as igrejas locais da Conferência Anual do Oeste
-            de Angola, assegurando que cada jovem é conhecido, acompanhado no seu percurso e devidamente encaminhado à
-            OJA quando completa a idade. A plataforma existe para servir esse acompanhamento pastoral com informação
-            rigorosa e atempada — não para vigiar pessoas.
-          </p>
-        </div>
       </section>
 
 
@@ -181,9 +155,25 @@ const Sobre = () => (
       </section>
     </main>
 
-    <footer className="max-w-6xl mx-auto px-4 sm:px-6 py-10 text-center text-sm text-muted-foreground space-y-1">
-      <p className="font-semibold text-foreground">Igreja Metodista Unida — Conferência Anual do Oeste de Angola</p>
-      <p>Organização de Jovens Regulares · Plataforma de Gestão e Estatística</p>
+    <footer className="border-t border-border">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 text-center text-sm text-muted-foreground space-y-3">
+        <div className="space-y-1">
+          <p className="font-semibold text-foreground">Igreja Metodista Unida — Conferência Anual do Oeste de Angola</p>
+          <p>Organização de Jovens Regulares · Plataforma de Gestão e Estatística</p>
+        </div>
+        <div className="space-y-1">
+          <p className="flex items-center justify-center gap-2 font-semibold text-foreground">
+            <Building2 size={16} className="text-primary" aria-hidden="true" /> Propriedade e Gestão da Plataforma
+          </p>
+          <p className="font-medium text-foreground">Direcção Geral da Juventude</p>
+          <p>
+            <a href="mailto:jimua.caoa@gmail.com" className="font-medium text-primary underline underline-offset-4 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              jimua.caoa@gmail.com
+            </a>{" "}
+            — para contactos oficiais ou reclamações
+          </p>
+        </div>
+      </div>
     </footer>
   </div>
 );
