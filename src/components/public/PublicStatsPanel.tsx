@@ -1,13 +1,12 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileSpreadsheet, FileText, UserMinus, Users } from "lucide-react";
+import { UserMinus, Users } from "lucide-react";
 import {
-  Area, AreaChart, Bar, BarChart, CartesianGrid, ComposedChart, LabelList, Legend, Line,
+  Bar, BarChart, CartesianGrid, LabelList,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import ChartCard from "@/components/public/ChartCard";
@@ -15,8 +14,7 @@ import ChartTooltip from "@/components/charts/ChartTooltip";
 import DonutChart from "@/components/charts/DonutChart";
 import RankingBars from "@/components/charts/RankingBars";
 import { ANIM, axisTick, CHART, chartMargin, gridProps } from "@/lib/chartTheme";
-import { exportarExcelPublico, exportarPdfPublico, StatsPublicos } from "@/lib/exportPublico";
-import { toast } from "@/hooks/use-toast";
+import type { StatsPublicos } from "@/lib/exportPublico";
 
 const TODOS = "todos";
 
@@ -66,15 +64,6 @@ const PublicStatsPanel = () => {
   );
 
   const s: StatsPublicos = stats || {};
-  const serie = s.serie_semestral || [];
-  const serieData = serie.map((p) => ({
-    periodo: `${p.ano}/${p.semestre}.º`,
-    Anterior: p.base,
-    Entradas: p.entradas,
-    Saídas: p.saidas,
-    Actual: p.actual,
-    Abandono: p.taxa_abandono,
-  }));
 
   const generoData = [
     { name: "Masculino", value: s.masculino ?? 0 },
