@@ -180,14 +180,14 @@ const Estruturas = () => {
                                       })}
                                     </Accordion>
                                   </div>
+                                  )}
                                 </AccordionContent>
                               </AccordionItem>
                             );
                           })}
-                                    </Accordion>
-                                  </div>
-                                  )}
-                                </AccordionContent>
+                        </Accordion>
+                      </div>
+                    </AccordionContent>
                   </AccordionItem>
                 );
               })}
