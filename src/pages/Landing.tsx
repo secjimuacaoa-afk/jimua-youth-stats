@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Church, BarChart3, ShieldCheck, ArrowRight } from "lucide-react";
-import logoJimua from "@/assets/logo-jimua.png";
+import previaPlataforma from "@/assets/previa-plataforma.jpg";
 import PublicHeader from "@/components/public/PublicHeader";
 import PublicStatsPanel from "@/components/public/PublicStatsPanel";
 
@@ -55,11 +55,17 @@ const Landing = () => (
             </div>
           </div>
           <div className="flex justify-center lg:justify-end">
-            <div className="rounded-3xl bg-primary-foreground/10 ring-1 ring-primary-foreground/20 p-8 sm:p-12 backdrop-blur-sm">
+            <div className="w-full max-w-xl rounded-2xl bg-primary-foreground/10 ring-1 ring-primary-foreground/20 p-2 sm:p-3 backdrop-blur-sm shadow-2xl">
+              <div className="flex items-center gap-1.5 px-2 py-2" aria-hidden="true">
+                <span className="h-2.5 w-2.5 rounded-full bg-primary-foreground/30" />
+                <span className="h-2.5 w-2.5 rounded-full bg-primary-foreground/30" />
+                <span className="h-2.5 w-2.5 rounded-full bg-primary-foreground/30" />
+              </div>
               <img
-                src={logoJimua}
-                alt="Logótipo da Organização de Jovens da Igreja Metodista Unida"
-                className="h-44 sm:h-64 lg:h-72 w-auto drop-shadow-2xl"
+                src={previaPlataforma}
+                alt="Pré-visualização do painel da plataforma com indicadores e gráficos da juventude"
+                className="w-full rounded-xl border border-primary-foreground/20"
+                loading="lazy"
               />
             </div>
           </div>
