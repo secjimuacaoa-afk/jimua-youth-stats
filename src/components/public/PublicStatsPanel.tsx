@@ -85,20 +85,6 @@ const PublicStatsPanel = () => {
     { label: "Feminino", value: s.feminino ?? 0 },
   ];
 
-  const exportarPdf = async () => {
-    try {
-      await exportarPdfPublico(s, escopo);
-    } catch {
-      toast({ title: "Não foi possível gerar o PDF", variant: "destructive" });
-    }
-  };
-  const exportarExcel = () => {
-    try {
-      exportarExcelPublico(s, escopo);
-    } catch {
-      toast({ title: "Não foi possível gerar o ficheiro Excel", variant: "destructive" });
-    }
-  };
 
   return (
     <div className="space-y-6">
