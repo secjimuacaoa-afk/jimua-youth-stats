@@ -117,6 +117,8 @@ const Estruturas = () => {
                         <Accordion type="multiple">
                           {ints.map((int: any) => {
                             const circs = circByIntendencia[int.id] || [];
+                            const nomeDistrito = (distritos as any[]).find((x: any) => x.id === int.distrito_id)?.nome || "";
+                            const usaCircuitos = nomeDistrito.toLowerCase().includes("luanda");
                             return (
                               <AccordionItem key={int.id} value={int.id}>
                                 <AccordionTrigger className="hover:no-underline text-sm">
