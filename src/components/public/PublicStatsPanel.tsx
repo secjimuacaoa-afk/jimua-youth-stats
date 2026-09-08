@@ -1,13 +1,12 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileSpreadsheet, FileText, UserMinus, Users } from "lucide-react";
+import { UserMinus, Users } from "lucide-react";
 import {
-  Area, AreaChart, Bar, BarChart, CartesianGrid, ComposedChart, LabelList, Legend, Line,
+  Bar, BarChart, CartesianGrid, LabelList,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import ChartCard from "@/components/public/ChartCard";
@@ -15,8 +14,7 @@ import ChartTooltip from "@/components/charts/ChartTooltip";
 import DonutChart from "@/components/charts/DonutChart";
 import RankingBars from "@/components/charts/RankingBars";
 import { ANIM, axisTick, CHART, chartMargin, gridProps } from "@/lib/chartTheme";
-import { exportarExcelPublico, exportarPdfPublico, StatsPublicos } from "@/lib/exportPublico";
-import { toast } from "@/hooks/use-toast";
+import type { StatsPublicos } from "@/lib/exportPublico";
 
 const TODOS = "todos";
 
@@ -66,15 +64,6 @@ const PublicStatsPanel = () => {
   );
 
   const s: StatsPublicos = stats || {};
-  const serie = s.serie_semestral || [];
-  const serieData = serie.map((p) => ({
-    periodo: `${p.ano}/${p.semestre}.º`,
-    Anterior: p.base,
-    Entradas: p.entradas,
-    Saídas: p.saidas,
-    Actual: p.actual,
-    Abandono: p.taxa_abandono,
-  }));
 
   const generoData = [
     { name: "Masculino", value: s.masculino ?? 0 },
@@ -89,16 +78,6 @@ const PublicStatsPanel = () => {
   ];
   const igrejasTop = s.igrejas_top || [];
 
-  const nomeDe = (lista: Estrutura[] | undefined, id: string) =>
-    id === TODOS ? undefined : lista?.find((x) => x.id === id)?.nome;
-
-  const escopo = {
-    distrito: nomeDe(estruturas?.distritos, distrito),
-    intendencia: nomeDe(estruturas?.intendencias, intendencia),
-    circuito: nomeDe(estruturas?.circuitos, circuito),
-    igreja: nomeDe(estruturas?.igrejas, igreja),
-  };
-
   const resumo = [
     { label: "Total de jovens activos", value: s.total ?? 0, icon: Users },
     { label: "Jovens inactivos", value: s.inactivos ?? 0, icon: UserMinus },
@@ -106,20 +85,6 @@ const PublicStatsPanel = () => {
     { label: "Feminino", value: s.feminino ?? 0 },
   ];
 
-  const exportarPdf = async () => {
-    try {
-      await exportarPdfPublico(s, escopo);
-    } catch {
-      toast({ title: "Não foi possível gerar o PDF", variant: "destructive" });
-    }
-  };
-  const exportarExcel = () => {
-    try {
-      exportarExcelPublico(s, escopo);
-    } catch {
-      toast({ title: "Não foi possível gerar o ficheiro Excel", variant: "destructive" });
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -167,20 +132,10 @@ const PublicStatsPanel = () => {
         </div>
       </div>
 
-      {/* Exportação */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground" aria-live="polite">
-          {isLoading ? "A carregar dados agregados…" : "Os números respeitam os filtros seleccionados acima."}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" className="min-h-11" onClick={exportarPdf}>
-            <FileText size={18} aria-hidden="true" className="mr-2" /> Exportar PDF
-          </Button>
-          <Button variant="outline" className="min-h-11" onClick={exportarExcel}>
-            <FileSpreadsheet size={18} aria-hidden="true" className="mr-2" /> Exportar Excel
-          </Button>
-        </div>
-      </div>
+      <p className="text-sm text-muted-foreground" aria-live="polite">
+        {isLoading ? "A carregar dados agregados…" : "Os números respeitam os filtros seleccionados acima."}
+      </p>
+
 
       {/* Resumo */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -197,67 +152,6 @@ const PublicStatsPanel = () => {
 
       {/* Gráficos */}
       <div className="grid lg:grid-cols-2 gap-5">
-        <ChartCard
-          className="lg:col-span-2"
-          title="Crescimento semestral"
-          description="Entradas e saídas registadas em cada semestre, com a linha do efectivo actual por cima. Nº actual = anterior + entradas − saídas."
-          empty={serieData.length === 0}
-          emptyMessage="Ainda não há semestres consolidados para este âmbito. Os valores aparecem à medida que as igrejas fecham os períodos."
-          tableHeaders={["Período", "Anterior / Entradas / Saídas / Actual"]}
-          table={serie.map((p) => ({ label: `${p.ano} · ${p.semestre}.º semestre`, value: `${p.base} / ${p.entradas} / ${p.saidas} / ${p.actual}` }))}
-        >
-          <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart data={serieData} margin={chartMargin}>
-              <CartesianGrid {...gridProps} />
-              <XAxis dataKey="periodo" tickLine={false} axisLine={false} tick={axisTick} />
-              <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={axisTick} width={44} />
-              <Tooltip cursor={{ fill: "hsl(var(--muted) / 0.5)" }} content={<ChartTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} />
-              <Bar dataKey="Entradas" fill={CHART.crescimento} radius={[4, 4, 0, 0]} maxBarSize={34} animationDuration={ANIM}>
-                <LabelList dataKey="Entradas" position="top" style={{ fontSize: 11, fill: CHART.eixo }} />
-              </Bar>
-              <Bar dataKey="Saídas" fill={CHART.alerta} radius={[4, 4, 0, 0]} maxBarSize={34} animationDuration={ANIM}>
-                <LabelList dataKey="Saídas" position="top" style={{ fontSize: 11, fill: CHART.eixo }} />
-              </Bar>
-              <Line type="monotone" dataKey="Actual" stroke={CHART.principal} strokeWidth={3} dot={{ r: 4, fill: CHART.principal }} animationDuration={ANIM} />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard
-          title="Taxa de abandono"
-          description="Percentagem de jovens que se afastaram no semestre, sobre o efectivo do início somado às entradas."
-          empty={serieData.length === 0}
-          emptyMessage="Sem semestres consolidados para calcular a taxa de abandono."
-          tableHeaders={["Período", "Taxa"]}
-          table={serie.map((p) => ({ label: `${p.ano} · ${p.semestre}.º semestre`, value: `${p.taxa_abandono}%` }))}
-        >
-          {serieData.length === 1 ? (
-            <div className="flex flex-col items-center justify-center py-10">
-              <span className="font-display text-5xl font-bold tabular-nums" style={{ color: CHART.alerta }}>
-                {serieData[0].Abandono}%
-              </span>
-              <span className="mt-2 text-sm text-muted-foreground">{serieData[0].periodo}</span>
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={240}>
-              <AreaChart data={serieData} margin={chartMargin}>
-                <defs>
-                  <linearGradient id="grad-abandono" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={CHART.alerta} stopOpacity={0.25} />
-                    <stop offset="100%" stopColor={CHART.alerta} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid {...gridProps} />
-                <XAxis dataKey="periodo" tickLine={false} axisLine={false} tick={axisTick} />
-                <YAxis unit="%" tickLine={false} axisLine={false} tick={axisTick} width={44} />
-                <Tooltip content={<ChartTooltip suffix="%" />} />
-                <Area type="monotone" dataKey="Abandono" stroke={CHART.alerta} strokeWidth={3} fill="url(#grad-abandono)" dot={{ r: 3 }} activeDot={{ r: 5 }} animationDuration={ANIM} />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
-        </ChartCard>
-
         <ChartCard
           title="Distribuição por sexo"
           description="Peso de jovens do sexo masculino e feminino no total de jovens activos do âmbito seleccionado."

@@ -117,17 +117,36 @@ const Estruturas = () => {
                         <Accordion type="multiple">
                           {ints.map((int: any) => {
                             const circs = circByIntendencia[int.id] || [];
+                            const nomeDistrito = (distritos as any[]).find((x: any) => x.id === int.distrito_id)?.nome || "";
+                            const usaCircuitos = nomeDistrito.toLowerCase().includes("luanda");
                             return (
                               <AccordionItem key={int.id} value={int.id}>
                                 <AccordionTrigger className="hover:no-underline text-sm">
                                   <div className="flex items-center gap-3 w-full">
                                     <MapPin size={14} className="text-secondary" />
                                     <span>{int.nome}</span>
-                                    <Badge variant="outline">{circs.length} circuito(s)</Badge>
+                                    <Badge variant="outline">
+                                      {usaCircuitos
+                                        ? `${circs.length} circuito(s)`
+                                        : `${circs.reduce((n: number, c: any) => n + (igrByCircuito[c.id]?.length || 0), 0)} igreja(s)`}
+                                    </Badge>
                                     {isAdmin && <Button size="icon" variant="ghost" className="h-6 w-6 ml-auto mr-2" onClick={(e) => { e.stopPropagation(); open("int", int.id, int.distrito_id, int.nome); }}><Pencil size={12} /></Button>}
                                   </div>
                                 </AccordionTrigger>
                                 <AccordionContent>
+                                  {!usaCircuitos ? (
+                                    <div className="ml-6 space-y-1">
+                                      {isAdmin && circs[0] && <Button size="sm" variant="ghost" onClick={() => open("igr", null, circs[0].id)}><Plus size={13} className="mr-1" /> Nova Igreja</Button>}
+                                      {circs.flatMap((c: any) => igrByCircuito[c.id] || []).length === 0 && <p className="text-xs text-muted-foreground py-2">Nenhuma igreja registada</p>}
+                                      {circs.flatMap((c: any) => igrByCircuito[c.id] || []).map((ig: any) => (
+                                        <div key={ig.id} className="flex items-center gap-3 p-2 rounded hover:bg-muted/50">
+                                          <Church size={14} className="text-primary" />
+                                          <span className="text-sm">{ig.nome}</span>
+                                          {isAdmin && <Button size="icon" variant="ghost" className="h-6 w-6 ml-auto" onClick={() => open("igr", ig.id, ig.circuito_id, ig.nome)}><Pencil size={12} /></Button>}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
                                   <div className="ml-6 space-y-2">
                                     {isAdmin && <Button size="sm" variant="ghost" onClick={() => open("circ", null, int.id)}><Plus size={13} className="mr-1" /> Novo Circuito</Button>}
                                     <Accordion type="multiple">
@@ -161,6 +180,7 @@ const Estruturas = () => {
                                       })}
                                     </Accordion>
                                   </div>
+                                  )}
                                 </AccordionContent>
                               </AccordionItem>
                             );
