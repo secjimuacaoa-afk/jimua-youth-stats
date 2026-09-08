@@ -167,20 +167,10 @@ const PublicStatsPanel = () => {
         </div>
       </div>
 
-      {/* Exportação */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground" aria-live="polite">
-          {isLoading ? "A carregar dados agregados…" : "Os números respeitam os filtros seleccionados acima."}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" className="min-h-11" onClick={exportarPdf}>
-            <FileText size={18} aria-hidden="true" className="mr-2" /> Exportar PDF
-          </Button>
-          <Button variant="outline" className="min-h-11" onClick={exportarExcel}>
-            <FileSpreadsheet size={18} aria-hidden="true" className="mr-2" /> Exportar Excel
-          </Button>
-        </div>
-      </div>
+      <p className="text-sm text-muted-foreground" aria-live="polite">
+        {isLoading ? "A carregar dados agregados…" : "Os números respeitam os filtros seleccionados acima."}
+      </p>
+
 
       {/* Resumo */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -197,67 +187,6 @@ const PublicStatsPanel = () => {
 
       {/* Gráficos */}
       <div className="grid lg:grid-cols-2 gap-5">
-        <ChartCard
-          className="lg:col-span-2"
-          title="Crescimento semestral"
-          description="Entradas e saídas registadas em cada semestre, com a linha do efectivo actual por cima. Nº actual = anterior + entradas − saídas."
-          empty={serieData.length === 0}
-          emptyMessage="Ainda não há semestres consolidados para este âmbito. Os valores aparecem à medida que as igrejas fecham os períodos."
-          tableHeaders={["Período", "Anterior / Entradas / Saídas / Actual"]}
-          table={serie.map((p) => ({ label: `${p.ano} · ${p.semestre}.º semestre`, value: `${p.base} / ${p.entradas} / ${p.saidas} / ${p.actual}` }))}
-        >
-          <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart data={serieData} margin={chartMargin}>
-              <CartesianGrid {...gridProps} />
-              <XAxis dataKey="periodo" tickLine={false} axisLine={false} tick={axisTick} />
-              <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={axisTick} width={44} />
-              <Tooltip cursor={{ fill: "hsl(var(--muted) / 0.5)" }} content={<ChartTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} />
-              <Bar dataKey="Entradas" fill={CHART.crescimento} radius={[4, 4, 0, 0]} maxBarSize={34} animationDuration={ANIM}>
-                <LabelList dataKey="Entradas" position="top" style={{ fontSize: 11, fill: CHART.eixo }} />
-              </Bar>
-              <Bar dataKey="Saídas" fill={CHART.alerta} radius={[4, 4, 0, 0]} maxBarSize={34} animationDuration={ANIM}>
-                <LabelList dataKey="Saídas" position="top" style={{ fontSize: 11, fill: CHART.eixo }} />
-              </Bar>
-              <Line type="monotone" dataKey="Actual" stroke={CHART.principal} strokeWidth={3} dot={{ r: 4, fill: CHART.principal }} animationDuration={ANIM} />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard
-          title="Taxa de abandono"
-          description="Percentagem de jovens que se afastaram no semestre, sobre o efectivo do início somado às entradas."
-          empty={serieData.length === 0}
-          emptyMessage="Sem semestres consolidados para calcular a taxa de abandono."
-          tableHeaders={["Período", "Taxa"]}
-          table={serie.map((p) => ({ label: `${p.ano} · ${p.semestre}.º semestre`, value: `${p.taxa_abandono}%` }))}
-        >
-          {serieData.length === 1 ? (
-            <div className="flex flex-col items-center justify-center py-10">
-              <span className="font-display text-5xl font-bold tabular-nums" style={{ color: CHART.alerta }}>
-                {serieData[0].Abandono}%
-              </span>
-              <span className="mt-2 text-sm text-muted-foreground">{serieData[0].periodo}</span>
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={240}>
-              <AreaChart data={serieData} margin={chartMargin}>
-                <defs>
-                  <linearGradient id="grad-abandono" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={CHART.alerta} stopOpacity={0.25} />
-                    <stop offset="100%" stopColor={CHART.alerta} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid {...gridProps} />
-                <XAxis dataKey="periodo" tickLine={false} axisLine={false} tick={axisTick} />
-                <YAxis unit="%" tickLine={false} axisLine={false} tick={axisTick} width={44} />
-                <Tooltip content={<ChartTooltip suffix="%" />} />
-                <Area type="monotone" dataKey="Abandono" stroke={CHART.alerta} strokeWidth={3} fill="url(#grad-abandono)" dot={{ r: 3 }} activeDot={{ r: 5 }} animationDuration={ANIM} />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
-        </ChartCard>
-
         <ChartCard
           title="Distribuição por sexo"
           description="Peso de jovens do sexo masculino e feminino no total de jovens activos do âmbito seleccionado."
