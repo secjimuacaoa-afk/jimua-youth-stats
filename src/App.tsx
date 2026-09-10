@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,7 +12,7 @@ import Jovens from "./pages/Jovens";
 import Classes from "./pages/Classes";
 import Estruturas from "./pages/Estruturas";
 import Utilizadores from "./pages/Utilizadores";
-import Estatisticas from "./pages/Estatisticas";
+import Auditoria from "./pages/Auditoria";
 import Configuracoes from "./pages/Configuracoes";
 import PublicDashboard from "./pages/PublicDashboard";
 import PublicEstatisticas from "./pages/PublicEstatisticas";
@@ -48,7 +48,8 @@ const App = () => (
             <Route path="/contactos" element={<ProtectedRoute><Contactos /></ProtectedRoute>} />
             <Route path="/estruturas" element={<ProtectedRoute adminOnly><Estruturas /></ProtectedRoute>} />
             <Route path="/utilizadores" element={<ProtectedRoute adminOnly><Utilizadores /></ProtectedRoute>} />
-            <Route path="/estatisticas" element={<ProtectedRoute><Estatisticas /></ProtectedRoute>} />
+            <Route path="/auditoria" element={<ProtectedRoute distritalOnly><Auditoria /></ProtectedRoute>} />
+            <Route path="/estatisticas" element={<Navigate to="/mapa-estatistico" replace />} />
             <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
             <Route path="/sobre" element={<Sobre />} />
             <Route path="/publico/dashboard" element={<PublicDashboard />} />
